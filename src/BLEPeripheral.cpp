@@ -201,9 +201,19 @@ void BLEPeripheral::setConnectable(bool connectable) {
   this->_device->setConnectable(connectable);
 }
 
-bool  BLEPeripheral::setTxPower(int txPower) {
+boolean BLEPeripheral::setTxPower(int8_t txPower) {
   return this->_device->setTxPower(txPower);
 }
+
+#if defined(NRF52840)
+boolean BLEPeripheral::setAdvertisingTxPower(int8_t txPower) {
+  return this->_device->setAdvertisingTxPower(txPower);
+}
+
+boolean BLEPeripheral::setConnectedTxPower(int8_t txPower) {
+  return this->_device->setConnectedTxPower(txPower);
+}
+#endif
 
 void BLEPeripheral::setBondStore(BLEBondStore& bondStore) {
   this->_device->setBondStore(bondStore);

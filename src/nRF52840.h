@@ -58,7 +58,11 @@ class nRF52840 : public BLEDevice
 
     virtual void end();
 
-    virtual bool setTxPower(int txPower);
+    virtual bool setTxPower(int8_t txPower);
+#if defined(NRF52_S140)      
+    virtual boolean setConnectedTxPower(int8_t txPower);
+    virtual boolean setAdvertisingTxPower(int8_t txPower);
+#endif    
     virtual void startAdvertising();
     virtual void disconnect();
 
@@ -104,6 +108,7 @@ class nRF52840 : public BLEDevice
     unsigned char                     _numRemoteCharacteristics;
     struct remoteCharacteristicInfo*  _remoteCharacteristicInfo;
     bool                              _remoteRequestInProgress;
+    int8_t                            _txPower;
     static void faultHandler(uint32_t id, uint32_t pc, uint32_t info);
 };
 
