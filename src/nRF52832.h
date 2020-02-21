@@ -1,34 +1,18 @@
 // Copyright (c) Sandeep Mistry. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#ifndef _NRF_51822_H_
-#define _NRF_51822_H_
+#ifndef _NRF_52832_H_
+#define _NRF_52832_H_
 
-#if defined(__RFduino__)
-  #include <utility/RFduino/ble_gatts.h>
-  #include <utility/RFduino/ble_gattc.h>
-#elif defined(NRF5) || defined(NRF51_S130)
+#if defined(NRF52_S132)
   #include <ble_gatts.h>
   #include <ble_gattc.h>
   #include <ble_gap.h>
   #include <nrf_soc.h>
-#elif defined(NRF52) && defined(S132) // ARDUINO_RBL_nRF52832
-  #ifndef ARDUINO_RBL_nRF52832
-    #define ARDUINO_RBL_nRF52832
-  #endif
-  #define NRF5
-
-  #include <sdk/softdevice/s132/headers/nrf_ble_gatts.h>
-  #include <sdk/softdevice/s132/headers/nrf_ble_gattc.h>
-  #include <sdk/softdevice/s132/headers/nrf_soc.h>
-#else
-  #include <s110/ble_gatts.h>
-  #include <s110/ble_gattc.h>
-#endif
 
 #include "BLEDevice.h"
 
-class nRF51822 : public BLEDevice
+class nRF52832 : public BLEDevice
 {
   friend class BLEPeripheral;
 
@@ -58,9 +42,9 @@ class nRF51822 : public BLEDevice
       uint16_t valueHandle;
     };
 
-    nRF51822();
+    nRF52832();
 
-    virtual ~nRF51822();
+    virtual ~nRF52832();
 
     virtual void begin(unsigned char advertisementDataSize,
                 BLEEirData *advertisementData,
@@ -107,13 +91,10 @@ class nRF51822 : public BLEDevice
 
     uint16_t                          _connectionHandle;
     uint8_t                           _adv_handle;
-#if defined(NRF5) || defined(NRF51_S130)
     uint8_t                           _bondData[((sizeof(ble_gap_enc_key_t) + 3) / 4) * 4]  __attribute__ ((__aligned__(4)));
     ble_gap_enc_key_t*                _encKey;
-#else
     uint8_t                           _authStatusBuffer[((sizeof(ble_gap_evt_auth_status_t) + 3) / 4) * 4]  __attribute__ ((__aligned__(4)));
     ble_gap_evt_auth_status_t*        _authStatus;
-#endif
     unsigned char                     _txBufferCount;
 
     unsigned char                     _numLocalCharacteristics;
@@ -127,5 +108,5 @@ class nRF51822 : public BLEDevice
     bool                              _remoteRequestInProgress;
     static void faultHandler(uint32_t id, uint32_t pc, uint32_t info);
 };
-
+#endif
 #endif

@@ -1,36 +1,16 @@
 // Copyright (c) Sandeep Mistry. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if (defined(NRF51) || defined(NRF52) || defined(__RFduino__)) && !defined(NRF52840)
-
+#if defined(NRF52_S132)
 
 #define APP_ERROR_CHECK(ERR_CODE)   null
 #define PRINT_ERROR(RET_CODE) 
 
+#include <ble.h>
+#include <ble_hci.h>
+#include <nrf_sdm.h>
 
-#ifdef __RFduino__
-  #include <utility/RFduino/ble.h>
-  #include <utility/RFduino/ble_hci.h>
-  #include <utility/RFduino/nrf_sdm.h>
-#elif defined(NRF5) || defined(NRF51_S130)
-  #include <ble.h>
-  #include <ble_hci.h>
-  #include <nrf_sdm.h>
-#elif defined(NRF52) && defined(S132) // ARDUINO_RBL_nRF52832
-  #ifndef ARDUINO_RBL_nRF52832
-    #define ARDUINO_RBL_nRF52832
-  #endif
 
-  #include <sdk/softdevice/s132/headers/nrf_ble.h>
-  #include <sdk/softdevice/s132/headers/nrf_ble_hci.h>
-  #include <sdk/softdevice/s132/headers/nrf_sdm.h>
-#else
-  #include <s110/ble.h>
-  #include <s110/ble_hci.h>
-  #include <s110/nrf_sdm.h>
-#endif
-
-#if defined(NRF5) || defined(NRF51_S130) || defined(ARDUINO_RBL_nRF52832)
 uint32_t sd_ble_gatts_value_set(uint16_t handle, uint16_t offset, uint16_t* const p_len, uint8_t const * const p_value) {
   ble_gatts_value_t val;
 
@@ -39,7 +19,6 @@ uint32_t sd_ble_gatts_value_set(uint16_t handle, uint16_t offset, uint16_t* cons
   val.p_value = (uint8_t*)p_value;
   return sd_ble_gatts_value_set(BLE_CONN_HANDLE_INVALID, handle, &val);
 }
-#endif
 
 #include "Arduino.h"
 
@@ -50,9 +29,9 @@ uint32_t sd_ble_gatts_value_set(uint16_t handle, uint16_t offset, uint16_t* cons
 #include "BLEUtil.h"
 #include "BLEUuid.h"
 
-#include "nRF51822.h"
+#include "nRF52832.h"
 
-// #define NRF_51822_DEBUG
+// #define NRF_DEBUG
 
 #define BLE_STACK_EVT_MSG_BUF_SIZE       (sizeof(ble_evt_t) + (BLE_GATT_ATT_MTU_DEFAULT))
 
@@ -60,7 +39,7 @@ uint32_t sd_ble_gatts_value_set(uint16_t handle, uint16_t offset, uint16_t* cons
   #define BLE_GATTS_ATTR_TAB_SIZE BLE_GATTS_ATTR_TAB_SIZE_DEFAULT
 #endif
 
-nRF51822::nRF51822() :
+nRF52832::nRF52832() :
   BLEDevice(),
 
   _advDataLen(0),
@@ -81,20 +60,15 @@ nRF51822::nRF51822() :
   _remoteCharacteristicInfo(NULL),
   _remoteRequestInProgress(false)
 {
-#if defined(NRF5) || defined(NRF51_S130)
   this->_encKey = (ble_gap_enc_key_t*)&this->_bondData;
   memset(&this->_bondData, 0, sizeof(this->_bondData));
-#else
-  this->_authStatus = (ble_gap_evt_auth_status_t*)&this->_authStatusBuffer;
-  memset(&this->_authStatusBuffer, 0, sizeof(this->_authStatusBuffer));
-#endif
 }
 
-nRF51822::~nRF51822() {
+nRF52832::~nRF52832() {
   this->end();
 }
 
-void nRF51822::begin(unsigned char advertisementDataSize,
+void nRF52832::begin(unsigned char advertisementDataSize,
                       BLEEirData *advertisementData,
                       unsigned char scanDataSize,
                       BLEEirData *scanData,
@@ -105,9 +79,6 @@ void nRF51822::begin(unsigned char advertisementDataSize,
 {
   uint32_t ret_code;
 
-#ifdef __RFduino__
-  sd_softdevice_enable(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, NULL);
-#elif defined(NRF5) && !defined(S110)
   #if defined(USE_LFRC)
     nrf_clock_lf_cfg_t cfg = {
       .source        = NRF_CLOCK_LF_SRC_RC,
@@ -134,44 +105,14 @@ void nRF51822::begin(unsigned char advertisementDataSize,
 
   ret_code = sd_softdevice_enable(&cfg, this->faultHandler);
   PRINT_ERROR(ret_code);
-#else
-  #if defined(USE_LFRC)
-    sd_softdevice_enable(NRF_CLOCK_LFCLKSRC_RC_250_PPM_250MS_CALIBRATION, NULL);
-  #elif defined(USE_LFSYNT)
-    sd_softdevice_enable(NRF_CLOCK_LFCLKSRC_SYNTH_250_PPM, NULL);
-  #else
-    //default USE_LFXO
-    sd_softdevice_enable(NRF_CLOCK_LFCLKSRC_XTAL_20_PPM, NULL);
-  #endif
-#endif
 
-#if defined(NRF5) && !defined(S110)
   extern uint32_t __data_start__;
   uint32_t app_ram_base = (uint32_t) &__data_start__;
 
   ret_code = sd_ble_enable(&app_ram_base);
   PRINT_ERROR(ret_code);
 
-#elif defined(S110)
-  ble_enable_params_t enableParams = {
-      .gatts_enable_params = {
-          .service_changed = true,
-          .attr_tab_size = BLE_GATTS_ATTR_TAB_SIZE
-      }
-  };
-
-  sd_ble_enable(&enableParams);
-#elif defined(NRF51_S130)
-  ble_enable_params_t enableParams = {
-      .gatts_enable_params = {
-          .service_changed = true
-      }
-  };
-
-  sd_ble_enable(&enableParams);
-#endif
-
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
   ble_version_t version;
 
   sd_ble_version_get(&version);
@@ -507,7 +448,7 @@ void nRF51822::begin(unsigned char advertisementDataSize,
   }
 
   if (this->_bondStore && this->_bondStore->hasData()) {
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
     Serial.println(F("Restoring bond data"));
 #endif
 #if defined(NRF5) || defined(NRF51_S130)
@@ -518,30 +459,26 @@ void nRF51822::begin(unsigned char advertisementDataSize,
   }
 
   this->startAdvertising();
-
-#ifdef __RFduino__
-  RFduinoBLE_enabled = 1;
-#endif
 }
 
-void nRF51822::poll() {
+void nRF52832::poll() {
   uint32_t   evtBuf[BLE_STACK_EVT_MSG_BUF_SIZE] __attribute__ ((__aligned__(BLE_EVT_PTR_ALIGNMENT)));
   uint16_t   evtLen = sizeof(evtBuf);
   ble_evt_t* bleEvt = (ble_evt_t*)evtBuf;
 
   if (sd_ble_evt_get((uint8_t*)evtBuf, &evtLen) == NRF_SUCCESS) {
     switch (bleEvt->header.evt_id) {
+      case BLE_GATTS_EVT_HVN_TX_COMPLETE: // TODO should we add separate handling for this event? 
       case BLE_GATTC_EVT_WRITE_CMD_TX_COMPLETE:
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt TX complete "));
         Serial.println(bleEvt->evt.common_evt.params.tx_complete.count);
 #endif
         this->_txBufferCount += bleEvt->evt.gattc_evt.params.write_cmd_tx_complete.count;
         break;
-      // case BLE_GATTS_EVT_HVN_TX_COMPLETE:
 
       case BLE_GAP_EVT_CONNECTED:
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         char address[18];
 
         BLEUtil::addressToString(bleEvt->evt.gap_evt.params.connected.peer_addr.addr, address);
@@ -550,17 +487,9 @@ void nRF51822::poll() {
         Serial.println(address);
 #endif
 
-        this->_connectionHandle = bleEvt->evt.gap_evt.conn_handle;
-
-        
-#if defined(NRF5) && !defined(S110)
-        {
-          this->_txBufferCount = BLE_GATTC_WRITE_CMD_TX_QUEUE_SIZE_DEFAULT;
-          this->setConnectedTxPower(0); // TODO
-        }
-#else
-        sd_ble_tx_buffer_count_get(&this->_txBufferCount);
-#endif
+        this->_connectionHandle = bleEvt->evt.gap_evt.conn_handle;    
+        this->_txBufferCount = BLE_GATTC_WRITE_CMD_TX_QUEUE_SIZE_DEFAULT;
+        this->setConnectedTxPower(0); // TODO refactor to use property
 
         if (this->_eventListener) {
           this->_eventListener->BLEDeviceConnected(*this, bleEvt->evt.gap_evt.params.connected.peer_addr.addr);
@@ -584,7 +513,7 @@ void nRF51822::poll() {
         break;
 
       case BLE_GAP_EVT_DISCONNECTED:
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.println(F("Evt Disconnected"));
 #endif
         this->_connectionHandle = BLE_CONN_HANDLE_INVALID;
@@ -623,7 +552,7 @@ void nRF51822::poll() {
         break;
 
       case BLE_GAP_EVT_CONN_PARAM_UPDATE:
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Conn Param Update 0x"));
         Serial.print(bleEvt->evt.gap_evt.params.conn_param_update.conn_params.min_conn_interval, HEX);
         Serial.print(F(" 0x"));
@@ -637,12 +566,8 @@ void nRF51822::poll() {
         break;
 
       case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Sec Params Request "));
-#if !defined(NRF5) && !defined(NRF51_S130)
-        Serial.print(bleEvt->evt.gap_evt.params.sec_params_request.peer_params.timeout);
-        Serial.print(F(" "));
-#endif
         Serial.print(bleEvt->evt.gap_evt.params.sec_params_request.peer_params.bond);
         Serial.print(F(" "));
         Serial.print(bleEvt->evt.gap_evt.params.sec_params_request.peer_params.mitm);
@@ -664,13 +589,7 @@ void nRF51822::poll() {
 
           memset(&gapSecParams, 0x00, sizeof(ble_gap_sec_params_t));
 
-#if defined(NRF5) && !defined(S110)
           gapSecParams.kdist_own.enc = 1;
-#elif defined(NRF51_S130)
-          gapSecParams.kdist_periph.enc = 1;
-#elif !defined(NRF5)
-          gapSecParams.timeout          = 30; // must be 30s
-#endif
           gapSecParams.bond             = true;
           gapSecParams.mitm             = false;
           gapSecParams.io_caps          = BLE_GAP_IO_CAPS_NONE;
@@ -678,7 +597,6 @@ void nRF51822::poll() {
           gapSecParams.min_key_size     = 7;
           gapSecParams.max_key_size     = 16;
 
-#if defined(NRF5) && !defined(S110)
           ble_gap_sec_keyset_t keyset;
 
           keyset.keys_peer.p_enc_key  = NULL;
@@ -689,39 +607,17 @@ void nRF51822::poll() {
           keyset.keys_own.p_sign_key  = NULL;
 
           sd_ble_gap_sec_params_reply(this->_connectionHandle, BLE_GAP_SEC_STATUS_SUCCESS, &gapSecParams, &keyset);
-#elif defined(NRF51_S130) || defined(S110)
-          ble_gap_sec_keyset_t keyset;
-
-          keyset.keys_central.p_enc_key  = NULL;
-          keyset.keys_central.p_id_key   = NULL;
-          keyset.keys_central.p_sign_key = NULL;
-          keyset.keys_periph.p_enc_key   = this->_encKey;
-          keyset.keys_periph.p_id_key    = NULL;
-          keyset.keys_periph.p_sign_key  = NULL;
-
-          sd_ble_gap_sec_params_reply(this->_connectionHandle, BLE_GAP_SEC_STATUS_SUCCESS, &gapSecParams, &keyset);
-#else
-          sd_ble_gap_sec_params_reply(this->_connectionHandle, BLE_GAP_SEC_STATUS_SUCCESS, &gapSecParams);
-#endif
         } else {
-#if defined(NRF5) || defined(NRF51_S130)
           sd_ble_gap_sec_params_reply(this->_connectionHandle, BLE_GAP_SEC_STATUS_PAIRING_NOT_SUPP, NULL, NULL);
-#else
-          sd_ble_gap_sec_params_reply(this->_connectionHandle, BLE_GAP_SEC_STATUS_PAIRING_NOT_SUPP, NULL);
-#endif
         }
         break;
 
       case BLE_GAP_EVT_SEC_INFO_REQUEST:
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Sec Info Request "));
         // Serial.print(bleEvt->evt.gap_evt.params.sec_info_request.peer_addr);
         // Serial.print(F(" "));
-#if defined(NRF5) || defined(NRF51_S130)
         Serial.print(bleEvt->evt.gap_evt.params.sec_info_request.master_id.ediv);
-#else
-        Serial.print(bleEvt->evt.gap_evt.params.sec_info_request.div);
-#endif
         Serial.print(F(" "));
         Serial.print(bleEvt->evt.gap_evt.params.sec_info_request.enc_info);
         Serial.print(F(" "));
@@ -730,39 +626,24 @@ void nRF51822::poll() {
         Serial.print(bleEvt->evt.gap_evt.params.sec_info_request.sign_info);
         Serial.println();
 #endif
-#if defined(NRF5) || defined(NRF51_S130)
         if (this->_encKey->master_id.ediv == bleEvt->evt.gap_evt.params.sec_info_request.master_id.ediv) {
           sd_ble_gap_sec_info_reply(this->_connectionHandle, &this->_encKey->enc_info, NULL, NULL);
         } else {
           sd_ble_gap_sec_info_reply(this->_connectionHandle, NULL, NULL, NULL);
         }
-#else
-        if (this->_authStatus->periph_keys.enc_info.div == bleEvt->evt.gap_evt.params.sec_info_request.div) {
-          sd_ble_gap_sec_info_reply(this->_connectionHandle, &this->_authStatus->periph_keys.enc_info, NULL);
-        } else {
-          sd_ble_gap_sec_info_reply(this->_connectionHandle, NULL, NULL);
-        }
-#endif
         break;
 
       case BLE_GAP_EVT_AUTH_STATUS:
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.println(F("Evt Auth Status"));
         Serial.println(bleEvt->evt.gap_evt.params.auth_status.auth_status);
 #endif
         if (BLE_GAP_SEC_STATUS_SUCCESS == bleEvt->evt.gap_evt.params.auth_status.auth_status) {
-#if !defined(NRF5) && !defined(NRF51_S130)
-          *this->_authStatus = bleEvt->evt.gap_evt.params.auth_status;
-#endif
           if (this->_bondStore) {
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
             Serial.println(F("Storing bond data"));
 #endif
-#if defined(NRF5) || defined(NRF51_S130)
             this->_bondStore->putData(this->_bondData, 0, sizeof(this->_bondData));
-#else
-            this->_bondStore->putData(this->_authStatusBuffer, 0, sizeof(this->_authStatusBuffer));
-#endif
           }
 
           if (this->_eventListener) {
@@ -772,7 +653,7 @@ void nRF51822::poll() {
         break;
 
       case BLE_GAP_EVT_CONN_SEC_UPDATE:
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Conn Sec Update "));
         Serial.print(bleEvt->evt.gap_evt.params.conn_sec_update.conn_sec.sec_mode.sm);
         Serial.print(F(" "));
@@ -784,7 +665,7 @@ void nRF51822::poll() {
         break;
 
       case BLE_GATTS_EVT_WRITE: {
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Write, handle = "));
         Serial.println(bleEvt->evt.gatts_evt.params.write.handle, DEC);
 
@@ -822,19 +703,15 @@ void nRF51822::poll() {
       }
 
       case BLE_GATTS_EVT_SYS_ATTR_MISSING:
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Sys Attr Missing "));
         Serial.println(bleEvt->evt.gatts_evt.params.sys_attr_missing.hint);
 #endif
-#if defined(NRF5) || defined(NRF51_S130)
         sd_ble_gatts_sys_attr_set(this->_connectionHandle, NULL, 0, 0);
-#else
-        sd_ble_gatts_sys_attr_set(this->_connectionHandle, NULL, 0);
-#endif
         break;
 
       case BLE_GATTC_EVT_PRIM_SRVC_DISC_RSP:
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Prim Srvc Disc Rsp 0x"));
         Serial.println(bleEvt->evt.gattc_evt.gatt_status, HEX);
 #endif
@@ -867,7 +744,7 @@ void nRF51822::poll() {
         break;
 
       case BLE_GATTC_EVT_CHAR_DISC_RSP:
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Char Disc Rsp 0x"));
         Serial.println(bleEvt->evt.gattc_evt.gatt_status, HEX);
 #endif
@@ -912,7 +789,7 @@ void nRF51822::poll() {
         break;
 
       case BLE_GATTC_EVT_READ_RSP: {
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Read Rsp 0x"));
         Serial.println(bleEvt->evt.gattc_evt.gatt_status, HEX);
         Serial.println(bleEvt->evt.gattc_evt.params.read_rsp.handle, DEC);
@@ -926,13 +803,7 @@ void nRF51822::poll() {
 
           memset(&gapSecParams, 0x00, sizeof(ble_gap_sec_params_t));
 
-#if defined(NRF5) && !defined(S110)
           gapSecParams.kdist_own.enc = 1;
-#elif defined(NRF51_S130)
-          gapSecParams.kdist_periph.enc = 1;
-#elif !defined(NRF5)
-          gapSecParams.timeout          = 30; // must be 30s
-#endif
           gapSecParams.bond             = true;
           gapSecParams.mitm             = false;
           gapSecParams.io_caps          = BLE_GAP_IO_CAPS_NONE;
@@ -957,7 +828,7 @@ void nRF51822::poll() {
       }
 
       case BLE_GATTC_EVT_WRITE_RSP:
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Write Rsp 0x"));
         Serial.println(bleEvt->evt.gattc_evt.gatt_status, HEX);
         Serial.println(bleEvt->evt.gattc_evt.params.write_rsp.handle, DEC);
@@ -970,13 +841,7 @@ void nRF51822::poll() {
 
           memset(&gapSecParams, 0x00, sizeof(ble_gap_sec_params_t));
 
-#if defined(NRF5) && !defined(S110)
           gapSecParams.kdist_own.enc = 1;
-#elif defined(NRF51_S130)
-          gapSecParams.kdist_periph.enc = 1;
-#elif !defined(NRF5)
-          gapSecParams.timeout          = 30; // must be 30s
-#endif
           gapSecParams.bond             = true;
           gapSecParams.mitm             = false;
           gapSecParams.io_caps          = BLE_GAP_IO_CAPS_NONE;
@@ -989,7 +854,7 @@ void nRF51822::poll() {
         break;
 
       case BLE_GATTC_EVT_HVX: {
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Hvx 0x"));
         Serial.println(bleEvt->evt.gattc_evt.gatt_status, HEX);
         Serial.println(bleEvt->evt.gattc_evt.params.hvx.handle, DEC);
@@ -1012,7 +877,7 @@ void nRF51822::poll() {
       }
 
       default:
-#ifdef NRF_51822_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("bleEvt->header.evt_id = 0x"));
         Serial.print(bleEvt->header.evt_id, HEX);
         Serial.print(F(" "));
@@ -1026,7 +891,7 @@ void nRF51822::poll() {
 }
 
 // set tx power for when connected
-boolean nRF51822::setConnectedTxPower(int8_t txPower) {
+boolean nRF52832::setConnectedTxPower(int8_t txPower) {
   uint32_t ret;
   
   ret = sd_ble_gap_tx_power_set(BLE_GAP_TX_POWER_ROLE_CONN, this->_connectionHandle, txPower);
@@ -1035,7 +900,7 @@ boolean nRF51822::setConnectedTxPower(int8_t txPower) {
   return ret == NRF_SUCCESS;
 }
 
-void nRF51822::end() {
+void nRF52832::end() {
   sd_softdevice_disable();
 
   if (this->_remoteCharacteristicInfo) {
@@ -1055,7 +920,7 @@ void nRF51822::end() {
   this->_numRemoteCharacteristics = 0;
 }
 
-bool nRF51822::updateCharacteristicValue(BLECharacteristic& characteristic) {
+bool nRF52832::updateCharacteristicValue(BLECharacteristic& characteristic) {
   bool success = true;
 
   for (int i = 0; i < this->_numLocalCharacteristics; i++) {
@@ -1108,7 +973,7 @@ bool nRF51822::updateCharacteristicValue(BLECharacteristic& characteristic) {
   return success;
 }
 
-bool nRF51822::broadcastCharacteristic(BLECharacteristic& characteristic) {
+bool nRF52832::broadcastCharacteristic(BLECharacteristic& characteristic) {
   bool success = false;
 
   for (int i = 0; i < this->_numLocalCharacteristics; i++) {
@@ -1151,15 +1016,15 @@ bool nRF51822::broadcastCharacteristic(BLECharacteristic& characteristic) {
   return success;
 }
 
-bool nRF51822::canNotifyCharacteristic(BLECharacteristic& /*characteristic*/) {
+bool nRF52832::canNotifyCharacteristic(BLECharacteristic& /*characteristic*/) {
   return (this->_txBufferCount > 0);
 }
 
-bool nRF51822::canIndicateCharacteristic(BLECharacteristic& /*characteristic*/) {
+bool nRF52832::canIndicateCharacteristic(BLECharacteristic& /*characteristic*/) {
   return (this->_txBufferCount > 0);
 }
 
-bool nRF51822::canReadRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
+bool nRF52832::canReadRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
   bool success = false;
 
   for (int i = 0; i < this->_numRemoteCharacteristics; i++) {
@@ -1174,7 +1039,7 @@ bool nRF51822::canReadRemoteCharacteristic(BLERemoteCharacteristic& characterist
   return success;
 }
 
-bool nRF51822::readRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
+bool nRF52832::readRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
   bool success = false;
 
   for (int i = 0; i < this->_numRemoteCharacteristics; i++) {
@@ -1190,7 +1055,7 @@ bool nRF51822::readRemoteCharacteristic(BLERemoteCharacteristic& characteristic)
   return success;
 }
 
-bool nRF51822::canWriteRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
+bool nRF52832::canWriteRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
   bool success = false;
 
   for (int i = 0; i < this->_numRemoteCharacteristics; i++) {
@@ -1209,7 +1074,7 @@ bool nRF51822::canWriteRemoteCharacteristic(BLERemoteCharacteristic& characteris
   return success;
 }
 
-bool nRF51822::writeRemoteCharacteristic(BLERemoteCharacteristic& characteristic, const unsigned char value[], unsigned char length) {
+bool nRF52832::writeRemoteCharacteristic(BLERemoteCharacteristic& characteristic, const unsigned char value[], unsigned char length) {
   bool success = false;
 
   for (int i = 0; i < this->_numRemoteCharacteristics; i++) {
@@ -1221,9 +1086,7 @@ bool nRF51822::writeRemoteCharacteristic(BLERemoteCharacteristic& characteristic
         ble_gattc_write_params_t writeParams;
 
         writeParams.write_op = (this->_remoteCharacteristicInfo[i].properties.write) ? BLE_GATT_OP_WRITE_REQ : BLE_GATT_OP_WRITE_CMD;
-#ifndef __RFduino__
         writeParams.flags = 0;
-#endif
         writeParams.handle = this->_remoteCharacteristicInfo[i].valueHandle;
         writeParams.offset = 0;
         writeParams.len = length;
@@ -1242,7 +1105,7 @@ bool nRF51822::writeRemoteCharacteristic(BLERemoteCharacteristic& characteristic
   return success;
 }
 
-bool nRF51822::canSubscribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
+bool nRF52832::canSubscribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
   bool success = false;
 
   for (int i = 0; i < this->_numRemoteCharacteristics; i++) {
@@ -1256,7 +1119,7 @@ bool nRF51822::canSubscribeRemoteCharacteristic(BLERemoteCharacteristic& charact
   return success;
 }
 
-bool nRF51822::subscribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
+bool nRF52832::subscribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
   bool success = false;
 
   for (int i = 0; i < this->_numRemoteCharacteristics; i++) {
@@ -1269,9 +1132,7 @@ bool nRF51822::subscribeRemoteCharacteristic(BLERemoteCharacteristic& characteri
         uint16_t value = (this->_remoteCharacteristicInfo[i].properties.notify ? 0x0001 : 0x002);
 
         writeParams.write_op = BLE_GATT_OP_WRITE_REQ;
-#ifndef __RFduino__
         writeParams.flags = 0;
-#endif
         writeParams.handle = (this->_remoteCharacteristicInfo[i].valueHandle + 1); // don't discover descriptors for now
         writeParams.offset = 0;
         writeParams.len = sizeof(value);
@@ -1288,11 +1149,11 @@ bool nRF51822::subscribeRemoteCharacteristic(BLERemoteCharacteristic& characteri
   return success;
 }
 
-bool nRF51822::canUnsubscribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
+bool nRF52832::canUnsubscribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
   return this->canSubscribeRemoteCharacteristic(characteristic);
 }
 
-bool nRF51822::unsubcribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
+bool nRF52832::unsubcribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
   bool success = false;
 
   for (int i = 0; i < this->_numRemoteCharacteristics; i++) {
@@ -1305,9 +1166,7 @@ bool nRF51822::unsubcribeRemoteCharacteristic(BLERemoteCharacteristic& character
         uint16_t value = 0x0000;
 
         writeParams.write_op = BLE_GATT_OP_WRITE_REQ;
-#ifndef __RFduino__
         writeParams.flags = 0;
-#endif
         writeParams.handle = (this->_remoteCharacteristicInfo[i].valueHandle + 1); // don't discover descriptors for now
         writeParams.offset = 0;
         writeParams.len = sizeof(value);
@@ -1324,7 +1183,7 @@ bool nRF51822::unsubcribeRemoteCharacteristic(BLERemoteCharacteristic& character
   return success;
 }
 
-bool nRF51822::setTxPower(uint8_t role, uint16_t handle, int8_t txPower) {
+bool nRF52832::setTxPower(uint8_t role, uint16_t handle, int8_t txPower) {
   if (txPower <= -40) {
     txPower = -40;
   } else if (txPower <= -30) {
@@ -1348,8 +1207,8 @@ bool nRF51822::setTxPower(uint8_t role, uint16_t handle, int8_t txPower) {
   return (sd_ble_gap_tx_power_set(role, handle, txPower) == NRF_SUCCESS);
 }
 
-void nRF51822::startAdvertising() {
-#ifdef NRF_51822_DEBUG
+void nRF52832::startAdvertising() {
+#ifdef NRF_DEBUG
   Serial.println(F("Start advertisement"));
 #endif
 
@@ -1382,11 +1241,11 @@ void nRF51822::startAdvertising() {
 
 }
 
-void nRF51822::disconnect() {
+void nRF52832::disconnect() {
   sd_ble_gap_disconnect(this->_connectionHandle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
 }
 
-void nRF51822::requestAddress() {
+void nRF52832::requestAddress() {
   ble_gap_addr_t gapAddress;
 
   sd_ble_gap_addr_get(&gapAddress);
@@ -1396,7 +1255,7 @@ void nRF51822::requestAddress() {
   }
 }
 
-void nRF51822::requestTemperature() {
+void nRF52832::requestTemperature() {
 #ifndef __RFduino__
   int32_t rawTemperature = 0;
 
@@ -1410,10 +1269,10 @@ void nRF51822::requestTemperature() {
 #endif
 }
 
-void nRF51822::requestBatteryLevel() {
+void nRF52832::requestBatteryLevel() {
 }
 
-void nRF51822::faultHandler(uint32_t id, uint32_t pc, uint32_t info) {
+void nRF52832::faultHandler(uint32_t id, uint32_t pc, uint32_t info) {
     Serial.println("*** nRF52840 SD faultHandler");
     PRINT_ERROR(id);
     NVIC_SystemReset();
