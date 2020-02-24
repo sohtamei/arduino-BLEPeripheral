@@ -22,7 +22,7 @@
 
 #if defined(NRF52840)
   #include "nRF52840.h"
-#elif defined(NRF52_S132) 
+#elif defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)
   #include "nRF52832.h"
 #elif defined(NRF51) || defined(NRF52) || defined(__RFduino__)
   #include "nRF51822.h"
@@ -140,7 +140,7 @@ class BLEPeripheral : public BLEDeviceEventListener,
 
 #if defined(NRF52840)
     nRF52840                       _nRF52840;
-#elif defined(NRF52_S132)
+#elif defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)
     nRF52832                       _nRF51822;    
 #elif defined(NRF51) || defined(NRF52) || defined(__RFduino__)
     nRF51822                       _nRF51822;

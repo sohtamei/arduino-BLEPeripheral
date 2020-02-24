@@ -1,7 +1,7 @@
 // Copyright (c) Sandeep Mistry. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if defined(NRF52_S132)
+#if defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)
 
 #define APP_ERROR_CHECK(ERR_CODE)   null
 #define PRINT_ERROR(RET_CODE) 
@@ -1273,7 +1273,7 @@ void nRF52832::requestBatteryLevel() {
 }
 
 void nRF52832::faultHandler(uint32_t id, uint32_t pc, uint32_t info) {
-    Serial.println("*** nRF52840 SD faultHandler");
+    Serial.println(F("*** nRF52840 SD faultHandler"));
     PRINT_ERROR(id);
     NVIC_SystemReset();
 }

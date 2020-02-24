@@ -4,7 +4,7 @@
 #ifndef _NRF_52832_H_
 #define _NRF_52832_H_
 
-#if defined(NRF52_S132)
+#if defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)
   #include <ble_gatts.h>
   #include <ble_gattc.h>
   #include <ble_gap.h>
