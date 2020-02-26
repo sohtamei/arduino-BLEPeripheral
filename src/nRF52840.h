@@ -6,7 +6,7 @@
 
 #include "Arduino.h"
 
-#if defined(NRF52_S140) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113) // || defined(NRF51_S130)
+#if defined(NRF52)
 #include <ble_gatts.h>
 #include <ble_gattc.h>
 #include <nrf_soc.h>
@@ -70,10 +70,8 @@ class nRF52840 : public BLEDevice
     virtual void end();
 
     virtual bool setTxPower(int8_t txPower);
-#if defined(NRF52_S140) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)     
     virtual boolean setConnectedTxPower(int8_t txPower);
     virtual boolean setAdvertisingTxPower(int8_t txPower);
-#endif    
     virtual void startAdvertising();
     virtual void disconnect();
 

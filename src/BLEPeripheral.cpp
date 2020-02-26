@@ -14,11 +14,9 @@
 #define DEFAULT_APPEARANCE  0x0000
 
 BLEPeripheral::BLEPeripheral(unsigned char req, unsigned char rdy, unsigned char rst) :
-#if defined(NRF52840) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113) 
+#if defined(NRF52)
   _nRF52840(),
-#elif defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)
-  _nRF52832(),
-#elif defined(NRF51) || defined(NRF52) || defined(__RFduino__)
+#elif defined(NRF51) || defined(__RFduino__)
   _nRF51822(),
 #else
   _nRF8001(req, rdy, rst),
@@ -46,11 +44,9 @@ BLEPeripheral::BLEPeripheral(unsigned char req, unsigned char rdy, unsigned char
 
   _central(this)
 {
-#if defined(NRF52840) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)
+#if defined(NRF52)
   this->_device = &this->_nRF52840;
-#elif defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)
-  this->_device = &this->_nRF52832;
-#elif defined(NRF51) || defined(NRF52) || defined(__RFduino__)
+#elif defined(NRF51) || defined(__RFduino__)
   this->_device = &this->_nRF51822;
 #else
   this->_device = &this->_nRF8001;
@@ -209,7 +205,7 @@ boolean BLEPeripheral::setTxPower(int8_t txPower) {
   return this->_device->setTxPower(txPower);
 }
 
-#if defined(NRF52840)
+#if defined(NRF52)
 boolean BLEPeripheral::setAdvertisingTxPower(int8_t txPower) {
   return this->_device->setAdvertisingTxPower(txPower);
 }

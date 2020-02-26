@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #include "nRF52840.h"
 
-#if defined(NRF52840) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)
+#if defined(NRF52)
 
 uint32_t sd_ble_gatts_value_set(uint16_t handle, uint16_t offset, uint16_t* const p_len, uint8_t const * const p_value) {
   ble_gatts_value_t val;
@@ -14,9 +14,9 @@ uint32_t sd_ble_gatts_value_set(uint16_t handle, uint16_t offset, uint16_t* cons
 }
 
 
-// #define NRF_52840_DEBUG
+// #define NRF_DEBUG
 
-#if defined(NRF_52840_DEBUG)
+#if defined(NRF_DEBUG)
 #define PRINT_ERROR(RET_CODE)                   \
   do {                                          \
     const uint32_t print_ret_code = (RET_CODE); \
@@ -28,7 +28,7 @@ uint32_t sd_ble_gatts_value_set(uint16_t handle, uint16_t offset, uint16_t* cons
   } while (0)
 #else
 #define APP_ERROR_CHECK(ERR_CODE)   null
-#define PRINT_ERROR(RET_CODE) // without this if NRF_52840_DEBUG is not set compiling will fail
+#define PRINT_ERROR(RET_CODE) // without this if NRF_DEBUG is not set compiling will fail
 #endif
 
 #define APP_BLE_CONN_CFG_TAG             1
@@ -181,7 +181,7 @@ void nRF52840::begin(unsigned char advertisementDataSize,
 
 
 
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
   ble_version_t version;
 
   sd_ble_version_get(&version);
@@ -555,7 +555,7 @@ void nRF52840::begin(unsigned char advertisementDataSize,
   }
 
   if (this->_bondStore && this->_bondStore->hasData()) {
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
     Serial.println(F("Restoring bond data"));
 #endif
     this->_bondStore->getData(this->_bondData, 0, sizeof(this->_bondData));
@@ -573,7 +573,7 @@ void nRF52840::poll() {
   if (sd_ble_evt_get((uint8_t*)evtBuf, &evtLen) == NRF_SUCCESS) {
     switch (bleEvt->header.evt_id) {
       case BLE_GATTC_EVT_WRITE_CMD_TX_COMPLETE:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt TX complete "));
         Serial.println(bleEvt->evt.gattc_evt.params.write_cmd_tx_complete.count);
 #endif
@@ -581,7 +581,7 @@ void nRF52840::poll() {
         break;
 
       case BLE_GAP_EVT_CONNECTED:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         char address[18];
 
         BLEUtil::addressToString(bleEvt->evt.gap_evt.params.connected.peer_addr.addr, address);
@@ -619,7 +619,7 @@ void nRF52840::poll() {
         break;
 
       case BLE_GAP_EVT_DISCONNECTED:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.println(F("Evt Disconnected"));
 #endif
         this->_connectionHandle = BLE_CONN_HANDLE_INVALID;
@@ -658,7 +658,7 @@ void nRF52840::poll() {
         break;
 
       case BLE_GAP_EVT_CONN_PARAM_UPDATE:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Conn Param Update 0x"));
         Serial.print(bleEvt->evt.gap_evt.params.conn_param_update.conn_params.min_conn_interval, HEX);
         Serial.print(F(" 0x"));
@@ -672,7 +672,7 @@ void nRF52840::poll() {
         break;
 
       case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Sec Params Request "));
         Serial.print(bleEvt->evt.gap_evt.params.sec_params_request.peer_params.bond);
         Serial.print(F(" "));
@@ -724,7 +724,7 @@ void nRF52840::poll() {
         break;
 
       case BLE_GAP_EVT_SEC_INFO_REQUEST:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Sec Info Request "));
         // Serial.print(bleEvt->evt.gap_evt.params.sec_info_request.peer_addr);
         // Serial.print(F(" "));
@@ -745,14 +745,14 @@ void nRF52840::poll() {
         break;
 
       case BLE_GAP_EVT_AUTH_STATUS:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.println(F("Evt Auth Status"));
         Serial.println(bleEvt->evt.gap_evt.params.auth_status.auth_status);
 #endif
         if (BLE_GAP_SEC_STATUS_SUCCESS == bleEvt->evt.gap_evt.params.auth_status.auth_status) {
 
           if (this->_bondStore) {
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
             Serial.println(F("Storing bond data"));
 #endif
             this->_bondStore->putData(this->_bondData, 0, sizeof(this->_bondData));
@@ -765,7 +765,7 @@ void nRF52840::poll() {
         break;
 
       case BLE_GAP_EVT_CONN_SEC_UPDATE:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Conn Sec Update "));
         Serial.print(bleEvt->evt.gap_evt.params.conn_sec_update.conn_sec.sec_mode.sm);
         Serial.print(F(" "));
@@ -777,17 +777,17 @@ void nRF52840::poll() {
         break;
 
       case BLE_GAP_EVT_ADV_SET_TERMINATED:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.println(F("Evt Adv Terminated"));
 #endif
       case BLE_GATTS_EVT_HVN_TX_COMPLETE:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.println(F("Evt Hvn Tx Complete"));
 #endif
         break;
 
       case BLE_GATTS_EVT_WRITE: {
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Write, handle = "));
         Serial.println(bleEvt->evt.gatts_evt.params.write.handle, DEC);
         BLEUtil::printBuffer(bleEvt->evt.gatts_evt.params.write.data, bleEvt->evt.gatts_evt.params.write.len);
@@ -824,7 +824,7 @@ void nRF52840::poll() {
       }
 
       case BLE_GATTS_EVT_SYS_ATTR_MISSING:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Sys Attr Missing "));
         Serial.println(bleEvt->evt.gatts_evt.params.sys_attr_missing.hint);
 #endif
@@ -832,7 +832,7 @@ void nRF52840::poll() {
         break;
 
       case BLE_GATTC_EVT_PRIM_SRVC_DISC_RSP:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Prim Srvc Disc Rsp 0x"));
         Serial.println(bleEvt->evt.gattc_evt.gatt_status, HEX);
 #endif
@@ -865,7 +865,7 @@ void nRF52840::poll() {
         break;
 
       case BLE_GATTC_EVT_CHAR_DISC_RSP:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Char Disc Rsp 0x"));
         Serial.println(bleEvt->evt.gattc_evt.gatt_status, HEX);
 #endif
@@ -910,7 +910,7 @@ void nRF52840::poll() {
         break;
 
       case BLE_GATTC_EVT_READ_RSP: {
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Read Rsp 0x"));
         Serial.println(bleEvt->evt.gattc_evt.gatt_status, HEX);
         Serial.println(bleEvt->evt.gattc_evt.params.read_rsp.handle, DEC);
@@ -950,7 +950,7 @@ void nRF52840::poll() {
       }
 
       case BLE_GATTC_EVT_WRITE_RSP:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Write Rsp 0x"));
         Serial.println(bleEvt->evt.gattc_evt.gatt_status, HEX);
         Serial.println(bleEvt->evt.gattc_evt.params.write_rsp.handle, DEC);
@@ -977,7 +977,7 @@ void nRF52840::poll() {
         break;
 
       case BLE_GATTC_EVT_HVX: {
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("Evt Hvx 0x"));
         Serial.println(bleEvt->evt.gattc_evt.gatt_status, HEX);
         Serial.println(bleEvt->evt.gattc_evt.params.hvx.handle, DEC);
@@ -1000,7 +1000,7 @@ void nRF52840::poll() {
       }
 
       default:
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
         Serial.print(F("bleEvt->header.evt_id = 0x"));
         Serial.print(bleEvt->header.evt_id, HEX);
         Serial.print(F(" "));
@@ -1379,7 +1379,7 @@ void nRF52840::faultHandler(uint32_t id, uint32_t pc, uint32_t info) {
 }
 
 void nRF52840::startAdvertising() {
-#ifdef NRF_52840_DEBUG
+#ifdef NRF_DEBUG
   Serial.println(F("Start advertisement"));
 #endif
   uint32_t ret;
