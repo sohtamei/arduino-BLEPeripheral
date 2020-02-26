@@ -141,7 +141,7 @@ class BLEPeripheral : public BLEDeviceEventListener,
 #if defined(NRF52840)
     nRF52840                       _nRF52840;
 #elif defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)
-    nRF52832                       _nRF51822;    
+    nRF52832                       _nRF52832;    
 #elif defined(NRF51) || defined(NRF52) || defined(__RFduino__)
     nRF51822                       _nRF51822;
 #else

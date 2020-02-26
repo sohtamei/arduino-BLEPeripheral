@@ -14,8 +14,10 @@
 #define DEFAULT_APPEARANCE  0x0000
 
 BLEPeripheral::BLEPeripheral(unsigned char req, unsigned char rdy, unsigned char rst) :
-#if defined(NRF52840)
+#if defined(NRF52840) 
   _nRF52840(),
+#elif defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)
+  _nRF52832(),
 #elif defined(NRF51) || defined(NRF52) || defined(__RFduino__)
   _nRF51822(),
 #else
@@ -46,6 +48,8 @@ BLEPeripheral::BLEPeripheral(unsigned char req, unsigned char rdy, unsigned char
 {
 #if defined(NRF52840)
   this->_device = &this->_nRF52840;
+#elif defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)
+  this->_device = &this->_nRF52832;
 #elif defined(NRF51) || defined(NRF52) || defined(__RFduino__)
   this->_device = &this->_nRF51822;
 #else
