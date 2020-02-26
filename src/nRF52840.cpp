@@ -1,13 +1,9 @@
 // Copyright (c) Sandeep Mistry. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#include "nRF52840.h"
 
 #if defined(NRF52840) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)
-#if defined(NRF5) || defined(NRF52_S140)
-#include <ble.h>
-#include <ble_hci.h>
-#include <nrf_sdm.h>
 
-#if defined(NRF52) || defined(NRF52_S140)
 uint32_t sd_ble_gatts_value_set(uint16_t handle, uint16_t offset, uint16_t* const p_len, uint8_t const * const p_value) {
   ble_gatts_value_t val;
 
@@ -16,18 +12,7 @@ uint32_t sd_ble_gatts_value_set(uint16_t handle, uint16_t offset, uint16_t* cons
   val.p_value = (uint8_t*)p_value;
   return sd_ble_gatts_value_set(BLE_CONN_HANDLE_INVALID, handle, &val);
 }
-#endif
 
-#include "Arduino.h"
-
-#include "BLEAttribute.h"
-#include "BLEService.h"
-#include "BLECharacteristic.h"
-#include "BLEDescriptor.h"
-#include "BLEUtil.h"
-#include "BLEUuid.h"
-
-#include "nRF52840.h"
 
 // #define NRF_52840_DEBUG
 
@@ -81,13 +66,8 @@ nRF52840::nRF52840() :
   _remoteRequestInProgress(false),
   _txPower(0)
 {
-#if defined(NRF5) || defined(NRF52_S140)
   this->_encKey = (ble_gap_enc_key_t*)&this->_bondData;
   memset(&this->_bondData, 0, sizeof(this->_bondData));
-#else
-  this->_authStatus = (ble_gap_evt_auth_status_t*)&this->_authStatusBuffer;
-  memset(&this->_authStatusBuffer, 0, sizeof(this->_authStatusBuffer));
-#endif
 }
 
 nRF52840::~nRF52840() {
@@ -104,7 +84,6 @@ void nRF52840::begin(unsigned char advertisementDataSize,
                       unsigned char numRemoteAttributes)
 {
   uint32_t ret;
-#if defined(NRF5) && (defined(S140) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113))
   #if defined(USE_LFRC)
     nrf_clock_lf_cfg_t cfg = {
       .source        = NRF_CLOCK_LF_SRC_RC,
@@ -131,9 +110,7 @@ void nRF52840::begin(unsigned char advertisementDataSize,
 
    ret = sd_softdevice_enable(&cfg, this->faultHandler);
    PRINT_ERROR(ret);
-#endif
 
-#if defined(NRF5) &&  (defined(S140) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113))
 
   extern uint32_t __data_start__;
   uint32_t app_ram_base = (uint32_t) &__data_start__;
@@ -202,7 +179,7 @@ void nRF52840::begin(unsigned char advertisementDataSize,
     }
   }
 
-#endif
+
 
 #ifdef NRF_52840_DEBUG
   ble_version_t version;
@@ -1332,15 +1309,10 @@ bool nRF52840::unsubcribeRemoteCharacteristic(BLERemoteCharacteristic& character
 }
 
 bool isTxPowerValid(int txPower) {
-#if defined(NRF52840) || (defined(S140) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113))
   static const int8_t permittedTxValues[] = {
     -40, -20, -16, -12, -8, -4, 0, 2, 3, 4, 5, 6, 7, 8
   };
-#else  
-  static const int8_t permittedTxValues[] = {
-     -40, -30, -20, -16, -12, -8, -4, 0, 4
-  };
-#endif
+
 
   for(uint8_t i = 0; i < sizeof(permittedTxValues); i++) {
     if (txPower == permittedTxValues[i]) {
@@ -1365,15 +1337,12 @@ boolean nRF52840::setTxPower(int8_t txPower) {
   }
   
   this->_txPower = txPower;
-#if defined(NRF51_S130) || defined(S132)
-  // ret = sd_ble_gap_tx_power_set(txPower);
-#endif
+
   PRINT_ERROR(ret);
   
   return ret == NRF_SUCCESS;
 }
 
-#if defined(NRF52_S140) ||  (defined(S140) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113))
 // set tx power for advertising mode
 boolean nRF52840::setAdvertisingTxPower(int8_t txPower) {
   uint32_t ret;
@@ -1401,7 +1370,7 @@ boolean nRF52840::setConnectedTxPower(int8_t txPower) {
   
   return ret == NRF_SUCCESS;
 }
-#endif
+
 
 void nRF52840::faultHandler(uint32_t id, uint32_t pc, uint32_t info) {
     Serial.println("*** nRF52840 SD faultHandler");
@@ -1451,6 +1420,5 @@ void nRF52840::requestTemperature() {
 void nRF52840::requestBatteryLevel() {
 }
 
-#endif
 
 #endif

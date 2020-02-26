@@ -4,11 +4,22 @@
 #ifndef _NRF_52840_H_
 #define _NRF_52840_H_
 
+#include "Arduino.h"
+
 #if defined(NRF52_S140) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113) // || defined(NRF51_S130)
 #include <ble_gatts.h>
 #include <ble_gattc.h>
 #include <nrf_soc.h>
+#include <ble.h>
+#include <ble_hci.h>
+#include <nrf_sdm.h>
 
+#include "BLEAttribute.h"
+#include "BLEService.h"
+#include "BLECharacteristic.h"
+#include "BLEDescriptor.h"
+#include "BLEUtil.h"
+#include "BLEUuid.h"
 #include "BLEDevice.h"
 
 class nRF52840 : public BLEDevice
@@ -59,7 +70,7 @@ class nRF52840 : public BLEDevice
     virtual void end();
 
     virtual bool setTxPower(int8_t txPower);
-#if defined(NRF52_S140)  || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)     
+#if defined(NRF52_S140) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)     
     virtual boolean setConnectedTxPower(int8_t txPower);
     virtual boolean setAdvertisingTxPower(int8_t txPower);
 #endif    
