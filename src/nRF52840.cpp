@@ -1,7 +1,7 @@
 // Copyright (c) Sandeep Mistry. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if defined(NRF52840)
+#if defined(NRF52840) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113)
 #if defined(NRF5) || defined(NRF52_S140)
 #include <ble.h>
 #include <ble_hci.h>
@@ -104,7 +104,7 @@ void nRF52840::begin(unsigned char advertisementDataSize,
                       unsigned char numRemoteAttributes)
 {
   uint32_t ret;
-#if defined(NRF5) && defined(S140)
+#if defined(NRF5) && (defined(S140) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113))
   #if defined(USE_LFRC)
     nrf_clock_lf_cfg_t cfg = {
       .source        = NRF_CLOCK_LF_SRC_RC,
@@ -133,7 +133,7 @@ void nRF52840::begin(unsigned char advertisementDataSize,
    PRINT_ERROR(ret);
 #endif
 
-#if defined(NRF5) && defined(S140)
+#if defined(NRF5) &&  (defined(S140) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113))
 
   extern uint32_t __data_start__;
   uint32_t app_ram_base = (uint32_t) &__data_start__;
@@ -195,10 +195,10 @@ void nRF52840::begin(unsigned char advertisementDataSize,
     Serial.println((RAM_START + (NRF_FICR->INFO.RAM * 1024)) - (app_ram_base), HEX);
   } else {
     if (app_ram_base != check_mem) {
-      Serial.print("RAM start (linker) can be adjusted to 0x");
-      Serial.println(app_ram_base, HEX);
-      Serial.print("RAM size for application can be adjusted to 0x");
-      Serial.println((RAM_START + (NRF_FICR->INFO.RAM * 1024)) - (app_ram_base), HEX);
+      // Serial.print("RAM start (linker) can be adjusted to 0x");
+      // Serial.println(app_ram_base, HEX);
+      // Serial.print("RAM size for application can be adjusted to 0x");
+      // Serial.println((RAM_START + (NRF_FICR->INFO.RAM * 1024)) - (app_ram_base), HEX);
     }
   }
 
@@ -616,7 +616,7 @@ void nRF52840::poll() {
         this->_connectionHandle = bleEvt->evt.gap_evt.conn_handle;
         this->_txBufferCount = BLE_GATTC_WRITE_CMD_TX_QUEUE_SIZE_DEFAULT;
 
-      #if defined(NRF52_S140)
+      #if  (defined(S140) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113))
         this->setConnectedTxPower(this->_txPower);
       #endif
 
@@ -1332,7 +1332,7 @@ bool nRF52840::unsubcribeRemoteCharacteristic(BLERemoteCharacteristic& character
 }
 
 bool isTxPowerValid(int txPower) {
-#if defined(NRF52840)
+#if defined(NRF52840) || (defined(S140) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113))
   static const int8_t permittedTxValues[] = {
     -40, -20, -16, -12, -8, -4, 0, 2, 3, 4, 5, 6, 7, 8
   };
@@ -1366,14 +1366,14 @@ boolean nRF52840::setTxPower(int8_t txPower) {
   
   this->_txPower = txPower;
 #if defined(NRF51_S130) || defined(S132)
-  ret = sd_ble_gap_tx_power_set(txPower);
+  // ret = sd_ble_gap_tx_power_set(txPower);
 #endif
   PRINT_ERROR(ret);
   
   return ret == NRF_SUCCESS;
 }
 
-#if defined(NRF52_S140)
+#if defined(NRF52_S140) ||  (defined(S140) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113))
 // set tx power for advertising mode
 boolean nRF52840::setAdvertisingTxPower(int8_t txPower) {
   uint32_t ret;
@@ -1414,7 +1414,7 @@ void nRF52840::startAdvertising() {
   Serial.println(F("Start advertisement"));
 #endif
   uint32_t ret;
-#if defined(NRF52_S140)
+#if defined(NRF52_S140) ||  (defined(S140) || defined(NRF52_S132) || defined(NRF52_S112) || defined(NRF52_S113))
   this->setAdvertisingTxPower(this->_txPower);
 #endif
   ret = sd_ble_gap_adv_start(_advHandle, APP_BLE_CONN_CFG_TAG);
