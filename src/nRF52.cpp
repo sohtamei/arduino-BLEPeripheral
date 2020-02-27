@@ -1,6 +1,6 @@
 // Copyright (c) Sandeep Mistry. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-#include "nRF52840.h"
+#include "nRF52.h"
 
 #if defined(NRF52)
 
@@ -45,7 +45,7 @@ uint32_t sd_ble_gatts_value_set(uint16_t handle, uint16_t offset, uint16_t* cons
 
 #define RAM_START                        0x20000000
 
-nRF52840::nRF52840() :
+nRF52::nRF52() :
   BLEDevice(),
 
   _advDataLen(0),
@@ -70,11 +70,11 @@ nRF52840::nRF52840() :
   memset(&this->_bondData, 0, sizeof(this->_bondData));
 }
 
-nRF52840::~nRF52840() {
+nRF52::~nRF52() {
   this->end();
 }
 
-void nRF52840::begin(unsigned char advertisementDataSize,
+void nRF52::begin(unsigned char advertisementDataSize,
                       BLEEirData *advertisementData,
                       unsigned char scanDataSize,
                       BLEEirData *scanData,
@@ -565,7 +565,7 @@ void nRF52840::begin(unsigned char advertisementDataSize,
 
 }
 
-void nRF52840::poll() {
+void nRF52::poll() {
   uint32_t   evtBuf[BLE_STACK_EVT_MSG_BUF_SIZE] __attribute__ ((__aligned__(BLE_EVT_PTR_ALIGNMENT)));
   uint16_t   evtLen = sizeof(evtBuf);
   ble_evt_t* bleEvt = (ble_evt_t*)evtBuf;
@@ -1013,7 +1013,7 @@ void nRF52840::poll() {
   // sd_app_evt_wait();
 }
 
-void nRF52840::end() {
+void nRF52::end() {
   sd_softdevice_disable();
 
   if (this->_remoteCharacteristicInfo) {
@@ -1033,7 +1033,7 @@ void nRF52840::end() {
   this->_numRemoteCharacteristics = 0;
 }
 
-bool nRF52840::updateCharacteristicValue(BLECharacteristic& characteristic) {
+bool nRF52::updateCharacteristicValue(BLECharacteristic& characteristic) {
   bool success = true;
 
   for (int i = 0; i < this->_numLocalCharacteristics; i++) {
@@ -1086,7 +1086,7 @@ bool nRF52840::updateCharacteristicValue(BLECharacteristic& characteristic) {
   return success;
 }
 
-bool nRF52840::broadcastCharacteristic(BLECharacteristic& characteristic) {
+bool nRF52::broadcastCharacteristic(BLECharacteristic& characteristic) {
   bool success = false;
 
   for (int i = 0; i < this->_numLocalCharacteristics; i++) {
@@ -1139,15 +1139,15 @@ bool nRF52840::broadcastCharacteristic(BLECharacteristic& characteristic) {
   return success;
 }
 
-bool nRF52840::canNotifyCharacteristic(BLECharacteristic& /*characteristic*/) {
+bool nRF52::canNotifyCharacteristic(BLECharacteristic& /*characteristic*/) {
   return (this->_txBufferCount > 0);
 }
 
-bool nRF52840::canIndicateCharacteristic(BLECharacteristic& /*characteristic*/) {
+bool nRF52::canIndicateCharacteristic(BLECharacteristic& /*characteristic*/) {
   return (this->_txBufferCount > 0);
 }
 
-bool nRF52840::canReadRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
+bool nRF52::canReadRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
   bool success = false;
 
   for (int i = 0; i < this->_numRemoteCharacteristics; i++) {
@@ -1162,7 +1162,7 @@ bool nRF52840::canReadRemoteCharacteristic(BLERemoteCharacteristic& characterist
   return success;
 }
 
-bool nRF52840::readRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
+bool nRF52::readRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
   bool success = false;
 
   for (int i = 0; i < this->_numRemoteCharacteristics; i++) {
@@ -1178,7 +1178,7 @@ bool nRF52840::readRemoteCharacteristic(BLERemoteCharacteristic& characteristic)
   return success;
 }
 
-bool nRF52840::canWriteRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
+bool nRF52::canWriteRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
   bool success = false;
 
   for (int i = 0; i < this->_numRemoteCharacteristics; i++) {
@@ -1197,7 +1197,7 @@ bool nRF52840::canWriteRemoteCharacteristic(BLERemoteCharacteristic& characteris
   return success;
 }
 
-bool nRF52840::writeRemoteCharacteristic(BLERemoteCharacteristic& characteristic, const unsigned char value[], unsigned char length) {
+bool nRF52::writeRemoteCharacteristic(BLERemoteCharacteristic& characteristic, const unsigned char value[], unsigned char length) {
   bool success = false;
 
   for (int i = 0; i < this->_numRemoteCharacteristics; i++) {
@@ -1228,7 +1228,7 @@ bool nRF52840::writeRemoteCharacteristic(BLERemoteCharacteristic& characteristic
   return success;
 }
 
-bool nRF52840::canSubscribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
+bool nRF52::canSubscribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
   bool success = false;
 
   for (int i = 0; i < this->_numRemoteCharacteristics; i++) {
@@ -1242,7 +1242,7 @@ bool nRF52840::canSubscribeRemoteCharacteristic(BLERemoteCharacteristic& charact
   return success;
 }
 
-bool nRF52840::subscribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
+bool nRF52::subscribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
   bool success = false;
 
   for (int i = 0; i < this->_numRemoteCharacteristics; i++) {
@@ -1273,11 +1273,11 @@ bool nRF52840::subscribeRemoteCharacteristic(BLERemoteCharacteristic& characteri
   return success;
 }
 
-bool nRF52840::canUnsubscribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
+bool nRF52::canUnsubscribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
   return this->canSubscribeRemoteCharacteristic(characteristic);
 }
 
-bool nRF52840::unsubcribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
+bool nRF52::unsubcribeRemoteCharacteristic(BLERemoteCharacteristic& characteristic) {
   bool success = false;
 
   for (int i = 0; i < this->_numRemoteCharacteristics; i++) {
@@ -1325,11 +1325,11 @@ bool isTxPowerValid(int txPower) {
 
 /*
 Valid values are depending on the MCU:
-  NRF52840: -40, -20, -16, -12, -8, -4, 0, 2, 3, 4, 5, 6, 7, 8
+  NRF52: -40, -20, -16, -12, -8, -4, 0, 2, 3, 4, 5, 6, 7, 8
   NRF51822: -30, -20, -16, -12, -8, -4, 0, 4
   NRF52832: -40, -30, -20, -16, -12, -8, -4, 0, 4
 */
-boolean nRF52840::setTxPower(int8_t txPower) {
+boolean nRF52::setTxPower(int8_t txPower) {
   uint32_t ret = NRF_SUCCESS;
   
   if (! isTxPowerValid(txPower)) {
@@ -1344,7 +1344,7 @@ boolean nRF52840::setTxPower(int8_t txPower) {
 }
 
 // set tx power for advertising mode
-boolean nRF52840::setAdvertisingTxPower(int8_t txPower) {
+boolean nRF52::setAdvertisingTxPower(int8_t txPower) {
   uint32_t ret;
   
   if (! isTxPowerValid(txPower)) {
@@ -1358,7 +1358,7 @@ boolean nRF52840::setAdvertisingTxPower(int8_t txPower) {
 }
 
 // set tx power for when connected
-boolean nRF52840::setConnectedTxPower(int8_t txPower) {
+boolean nRF52::setConnectedTxPower(int8_t txPower) {
   uint32_t ret;
   
   if (! isTxPowerValid(txPower)) {
@@ -1372,13 +1372,13 @@ boolean nRF52840::setConnectedTxPower(int8_t txPower) {
 }
 
 
-void nRF52840::faultHandler(uint32_t id, uint32_t pc, uint32_t info) {
-    Serial.println("*** nRF52840 SD faultHandler");
+void nRF52::faultHandler(uint32_t id, uint32_t pc, uint32_t info) {
+    Serial.println("*** nRF52 SD faultHandler");
     PRINT_ERROR(id);
     NVIC_SystemReset();
 }
 
-void nRF52840::startAdvertising() {
+void nRF52::startAdvertising() {
 #ifdef NRF_DEBUG
   Serial.println(F("Start advertisement"));
 #endif
@@ -1391,11 +1391,11 @@ void nRF52840::startAdvertising() {
 
 }
 
-void nRF52840::disconnect() {
+void nRF52::disconnect() {
   sd_ble_gap_disconnect(this->_connectionHandle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
 }
 
-void nRF52840::requestAddress() {
+void nRF52::requestAddress() {
   ble_gap_addr_t gapAddress;
 
   sd_ble_gap_addr_get(&gapAddress);
@@ -1405,7 +1405,7 @@ void nRF52840::requestAddress() {
   }
 }
 
-void nRF52840::requestTemperature() {
+void nRF52::requestTemperature() {
   int32_t rawTemperature = 0;
 
   sd_temp_get(&rawTemperature);
@@ -1417,7 +1417,7 @@ void nRF52840::requestTemperature() {
   }
 }
 
-void nRF52840::requestBatteryLevel() {
+void nRF52::requestBatteryLevel() {
 }
 
 

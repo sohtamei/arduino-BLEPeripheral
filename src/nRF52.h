@@ -1,8 +1,8 @@
 // Copyright (c) Sandeep Mistry. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#ifndef _NRF_52840_H_
-#define _NRF_52840_H_
+#ifndef _NRF_52_H_
+#define _NRF_52_H_
 
 #include "Arduino.h"
 
@@ -22,7 +22,7 @@
 #include "BLEUuid.h"
 #include "BLEDevice.h"
 
-class nRF52840 : public BLEDevice
+class nRF52 : public BLEDevice
 {
   friend class BLEPeripheral;
 
@@ -52,9 +52,9 @@ class nRF52840 : public BLEDevice
       uint16_t valueHandle;
     };
 
-    nRF52840();
+    nRF52();
 
-    virtual ~nRF52840();
+    virtual ~nRF52();
 
     virtual void begin(unsigned char advertisementDataSize,
                 BLEEirData *advertisementData,

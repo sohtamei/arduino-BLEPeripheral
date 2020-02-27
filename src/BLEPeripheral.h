@@ -21,7 +21,7 @@
 #include "BLETypedCharacteristics.h"
 
 #if defined(NRF52)
-  #include "nRF52840.h"
+  #include "nRF52.h"
 #elif defined(NRF51) || defined(__RFduino__)
   #include "nRF51822.h"
 #else
@@ -137,7 +137,7 @@ class BLEPeripheral : public BLEDeviceEventListener,
     BLEDevice*                     _device;
 
 #if defined(NRF52)
-    nRF52840                       _nRF52840;   
+    nRF52                          _nRF52;   
 #elif defined(NRF51) || defined(__RFduino__)
     nRF51822                       _nRF51822;
 #else

@@ -15,7 +15,7 @@
 
 BLEPeripheral::BLEPeripheral(unsigned char req, unsigned char rdy, unsigned char rst) :
 #if defined(NRF52)
-  _nRF52840(),
+  _nRF52(),
 #elif defined(NRF51) || defined(__RFduino__)
   _nRF51822(),
 #else
@@ -45,7 +45,7 @@ BLEPeripheral::BLEPeripheral(unsigned char req, unsigned char rdy, unsigned char
   _central(this)
 {
 #if defined(NRF52)
-  this->_device = &this->_nRF52840;
+  this->_device = &this->_nRF52;
 #elif defined(NRF51) || defined(__RFduino__)
   this->_device = &this->_nRF51822;
 #else
