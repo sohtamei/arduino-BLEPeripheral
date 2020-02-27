@@ -126,8 +126,10 @@ void nRF52::begin(unsigned char advertisementDataSize,
   // GAP Role Count
   memset(&ble_cfg, 0, sizeof(ble_cfg));
   ble_cfg.gap_cfg.role_count_cfg.periph_role_count  = 1;
+  #if !(defined(S112) || defined(S113))
   ble_cfg.gap_cfg.role_count_cfg.central_role_count = 0;
   ble_cfg.gap_cfg.role_count_cfg.central_sec_count  = 0;
+  #endif
   ret = sd_ble_cfg_set(BLE_GAP_CFG_ROLE_COUNT, &ble_cfg, app_ram_base);
   PRINT_ERROR(ret);
 
