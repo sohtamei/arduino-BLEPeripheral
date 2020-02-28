@@ -69,7 +69,9 @@ class BLEDevice
 
     virtual void end() { }
 
-    virtual bool setTxPower(int /*txPower*/) { return false; }
+    virtual bool setTxPower(int8_t /*txPower*/) { return false; }
+    virtual boolean setAdvertisingTxPower(int8_t txPower) { return false; }
+    virtual boolean setConnectedTxPower(int8_t txPower) {return false; }
 
     virtual void startAdvertising() { }
     virtual void disconnect() { }

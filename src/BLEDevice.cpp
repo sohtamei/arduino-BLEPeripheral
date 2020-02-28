@@ -5,13 +5,19 @@
 
 #include "BLEDevice.h"
 
+#define UNIT_1_25_MS 1250
+#define MSEC_TO_UNITS(TIME, RESOLUTION) (((TIME) * 1000) / (RESOLUTION))
+
 #define DEFAULT_ADVERTISING_INTERVAL 100
 #define DEFAULT_CONNECTABLE          true
 
+#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(100, UNIT_1_25_MS) // 0.5s
+#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(200, UNIT_1_25_MS) // 1.0s
+
 BLEDevice::BLEDevice() :
   _advertisingInterval(DEFAULT_ADVERTISING_INTERVAL),
-  _minimumConnectionInterval(0),
-  _maximumConnectionInterval(0),
+  _minimumConnectionInterval(MIN_CONN_INTERVAL),
+  _maximumConnectionInterval(MAX_CONN_INTERVAL),
   _connectable(DEFAULT_CONNECTABLE),
   _bondStore(NULL),
   _eventListener(NULL)

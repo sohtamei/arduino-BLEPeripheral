@@ -14,7 +14,9 @@
 #define DEFAULT_APPEARANCE  0x0000
 
 BLEPeripheral::BLEPeripheral(unsigned char req, unsigned char rdy, unsigned char rst) :
-#if defined(NRF51) || defined(NRF52) || defined(__RFduino__)
+#if defined(NRF52)
+  _nRF52(),
+#elif defined(NRF51) || defined(__RFduino__)
   _nRF51822(),
 #else
   _nRF8001(req, rdy, rst),
@@ -42,7 +44,9 @@ BLEPeripheral::BLEPeripheral(unsigned char req, unsigned char rdy, unsigned char
 
   _central(this)
 {
-#if defined(NRF51) || defined(NRF52) || defined(__RFduino__)
+#if defined(NRF52)
+  this->_device = &this->_nRF52;
+#elif defined(NRF51) || defined(__RFduino__)
   this->_device = &this->_nRF51822;
 #else
   this->_device = &this->_nRF8001;
@@ -76,31 +80,34 @@ void BLEPeripheral::begin() {
 
   scanData.length = 0;
 
-  unsigned char remainingAdvertisementDataLength = BLE_ADVERTISEMENT_DATA_MAX_VALUE_LENGTH + 2;
+  unsigned char remainingAdvertisementDataLength = BLE_GAP_ADV_SET_DATA_SIZE_MAX; // BLE_ADVERTISEMENT_DATA_MAX_VALUE_LENGTH + 2;
+  // Solicited Service UUID
   if (this->_serviceSolicitationUuid){
     BLEUuid serviceSolicitationUuid = BLEUuid(this->_serviceSolicitationUuid);
 
     unsigned char uuidLength = serviceSolicitationUuid.length();
     advertisementData[advertisementDataSize].length = uuidLength;
-    advertisementData[advertisementDataSize].type = (uuidLength > 2) ? 0x15 : 0x14;
+    advertisementData[advertisementDataSize].type = (uuidLength > 2) ? BLE_GAP_AD_TYPE_SOLICITED_SERVICE_UUIDS_128BIT : BLE_GAP_AD_TYPE_SOLICITED_SERVICE_UUIDS_16BIT;
 
     memcpy(advertisementData[advertisementDataSize].data, serviceSolicitationUuid.data(), uuidLength);
     advertisementDataSize += 1;
     remainingAdvertisementDataLength -= uuidLength + 2;
   }
+  // More Available UUID
   if (this->_advertisedServiceUuid){
     BLEUuid advertisedServiceUuid = BLEUuid(this->_advertisedServiceUuid);
 
     unsigned char uuidLength = advertisedServiceUuid.length();
     if (uuidLength + 2 <= remainingAdvertisementDataLength) {
       advertisementData[advertisementDataSize].length = uuidLength;
-      advertisementData[advertisementDataSize].type = (uuidLength > 2) ? 0x06 : 0x02;
+      advertisementData[advertisementDataSize].type = (uuidLength > 2) ? BLE_GAP_AD_TYPE_128BIT_SERVICE_UUID_MORE_AVAILABLE : BLE_GAP_AD_TYPE_16BIT_SERVICE_UUID_MORE_AVAILABLE;
 
       memcpy(advertisementData[advertisementDataSize].data, advertisedServiceUuid.data(), uuidLength);
       advertisementDataSize += 1;
       remainingAdvertisementDataLength -= uuidLength + 2;
     }
   }
+  // Manufacturer Specific
   if (this->_manufacturerData && this->_manufacturerDataLength > 0) {
     if (remainingAdvertisementDataLength >= 3) {
       unsigned char dataLength = this->_manufacturerDataLength;
@@ -110,14 +117,14 @@ void BLEPeripheral::begin() {
       }
 
       advertisementData[advertisementDataSize].length = dataLength;
-      advertisementData[advertisementDataSize].type = 0xff;
+      advertisementData[advertisementDataSize].type = BLE_GAP_AD_TYPE_MANUFACTURER_SPECIFIC_DATA;
 
       memcpy(advertisementData[advertisementDataSize].data, this->_manufacturerData, dataLength);
       advertisementDataSize += 1;
       remainingAdvertisementDataLength -= dataLength + 2;
     }
   }
-
+  // Name (Last!)
   if (this->_localName){
     unsigned char localNameLength = strlen(this->_localName);
     scanData.length = localNameLength;
@@ -126,8 +133,7 @@ void BLEPeripheral::begin() {
       scanData.length = BLE_SCAN_DATA_MAX_VALUE_LENGTH;
     }
 
-    scanData.type = (localNameLength > scanData.length) ? 0x08 : 0x09;
-
+    scanData.type = (localNameLength > scanData.length) ? BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME : BLE_GAP_AD_TYPE_SHORT_LOCAL_NAME;
     memcpy(scanData.data, this->_localName, scanData.length);
   }
 
@@ -195,9 +201,19 @@ void BLEPeripheral::setConnectable(bool connectable) {
   this->_device->setConnectable(connectable);
 }
 
-bool  BLEPeripheral::setTxPower(int txPower) {
+boolean BLEPeripheral::setTxPower(int8_t txPower) {
   return this->_device->setTxPower(txPower);
 }
+
+#if defined(NRF52)
+boolean BLEPeripheral::setAdvertisingTxPower(int8_t txPower) {
+  return this->_device->setAdvertisingTxPower(txPower);
+}
+
+boolean BLEPeripheral::setConnectedTxPower(int8_t txPower) {
+  return this->_device->setConnectedTxPower(txPower);
+}
+#endif
 
 void BLEPeripheral::setBondStore(BLEBondStore& bondStore) {
   this->_device->setBondStore(bondStore);

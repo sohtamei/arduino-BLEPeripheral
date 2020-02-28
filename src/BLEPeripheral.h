@@ -20,7 +20,9 @@
 #include "BLEService.h"
 #include "BLETypedCharacteristics.h"
 
-#if defined(NRF51) || defined(NRF52) || defined(__RFduino__)
+#if defined(NRF52)
+  #include "nRF52.h"
+#elif defined(NRF51) || defined(__RFduino__)
   #include "nRF51822.h"
 #else
   #include "nRF8001.h"
@@ -76,7 +78,11 @@ class BLEPeripheral : public BLEDeviceEventListener,
     // connection intervals in 1.25 ms increments,
     // must be between  0x0006 (7.5 ms) and 0x0c80 (4 s), values outside of this range will be ignored
     void setConnectionInterval(unsigned short minimumConnectionInterval, unsigned short maximumConnectionInterval);
-    bool setTxPower(int txPower);
+    boolean setTxPower(int8_t txPower);
+#if defined(NRF52)    
+    boolean setAdvertisingTxPower(int8_t txPower);
+    boolean setConnectedTxPower(int8_t txPower);
+#endif    
     void setConnectable(bool connectable);
     void setBondStore(BLEBondStore& bondStore);
 
@@ -130,7 +136,9 @@ class BLEPeripheral : public BLEDeviceEventListener,
   private:
     BLEDevice*                     _device;
 
-#if defined(NRF51) || defined(NRF52) || defined(__RFduino__)
+#if defined(NRF52)
+    nRF52                          _nRF52;   
+#elif defined(NRF51) || defined(__RFduino__)
     nRF51822                       _nRF51822;
 #else
     nRF8001                        _nRF8001;
