@@ -1,0 +1,180 @@
+#include <Arduino.h>
+#include <Wire.h>
+// #include <Adafruit_BMP280.h>
+#include <BLEPeripheral.h>
+// #include "app_timer.h"
+
+#include "nrf.h"
+#include "nrf_soc.h"
+
+BLEPeripheral blePeripheral = BLEPeripheral();
+
+BLEService pressureService = BLEService("DDD0");
+BLECharacteristic pressureCharacteristic = BLECharacteristic("DDD1", BLERead | BLEWrite, 16);
+BLEDescriptor pressureDescriptor = BLEDescriptor("2901", "Atm. Pressure");
+BLECharacteristic temperatureCharacteristic = BLECharacteristic("DDD2", BLERead | BLEWrite, 16);
+BLEDescriptor temperatureDescriptor = BLEDescriptor("2901", "Temperature");
+
+// Adafruit_BMP280 bmp;
+
+
+#define APP_TIMER_PRESCALER         0                     /**< Value of the RTC2 PRESCALER register. */
+#define APP_TIMER_MAX_TIMERS        1                     /**< Maximum number of simultaneously created timers. */
+#define MS_BETWEEN_SAMPLING_ADC		2000		      /* e.g.: fire timeout every 2 seconds */
+#define TIMER_TICKS		        APP_TIMER_TICKS(MS_BETWEEN_SAMPLING_ADC, APP_TIMER_PRESCALER)
+#define APP_TIMER_OP_QUEUE_SIZE         4                     /**< Size of timer operation queues. */
+// static app_timer_id_t                   m_timer_id;
+
+// boolean timers_start(void)
+// {
+//   	// Start application timers.
+//   	uint32_t err_code = app_timer_start(m_timer_id, TIMER_TICKS, NULL);
+// 	return NRF_SUCCESS == err_code;
+// }
+
+volatile boolean doPoll = false;
+char buf[16];
+
+void timeout_handler(void * p_context)
+{
+	doPoll = true;
+}
+
+volatile unsigned long rtc1_ovf_count = 0;
+volatile unsigned long rtc1_cmp_count = 0;
+
+void RTC1_OVRFLW_Handler()
+{
+	rtc1_ovf_count++;
+}
+
+void rtc1_onCompare()
+{
+	rtc1_cmp_count++;
+	doPoll = true;
+}
+
+// boolean timers_init(void)
+// {
+//   //initialize the low frequency clock
+// //   uint32_t err_code = nrf_drv_clock_init(NULL);
+// //   APP_ERROR_CHECK(err_code);
+// //   nrf_drv_clock_lfclk_request();
+//   // Initialize timer module.
+//   APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_MAX_TIMERS, APP_TIMER_OP_QUEUE_SIZE, NULL);
+
+//   	// Create timers.
+//   	uint32_t err_code = app_timer_create(&m_timer_id,
+// 			      APP_TIMER_MODE_REPEATED,
+// 			      timeout_handler);
+// 	return NRF_SUCCESS == err_code;
+// }
+
+void setup()
+{
+	Serial.begin(115200);
+	// Wire.setPins(1, 3);
+	// Wire.begin();
+
+	delay(100);
+
+	// bmp.begin(0x76);
+	// bmp.setSampling(Adafruit_BMP280::MODE_FORCED,     /* Operating Mode. */
+	// 			Adafruit_BMP280::SAMPLING_X1,     /* Temp. oversampling */
+	// 			Adafruit_BMP280::SAMPLING_X1,    /* Pressure oversampling */
+	// 			Adafruit_BMP280::FILTER_OFF);      /* Filtering. */
+
+	blePeripheral.setLocalName("HRM1");
+	blePeripheral.setAdvertisedServiceUuid(pressureService.uuid());
+  	blePeripheral.addAttribute(pressureService);
+  	blePeripheral.addAttribute(pressureCharacteristic);
+  	blePeripheral.addAttribute(pressureDescriptor);
+	blePeripheral.addAttribute(temperatureCharacteristic);
+	blePeripheral.addAttribute(temperatureDescriptor);
+
+	blePeripheral.setAdvertisingInterval(600);
+
+	blePeripheral.begin();
+
+	// timers_init();
+  	// timers_start();
+
+	registerRTC1CompareCallback(rtc1_onCompare, 0xFFFFFF / 20);
+
+	delay(500);
+}
+
+bool pingStarted = false;
+unsigned int lastPing;
+
+#define FPU_EXCEPTION_MASK 0x0000009F 
+
+void enterSleep()
+{
+	pingStarted = false;
+
+	// NRF_TWI1->ENABLE=TWIM_ENABLE_ENABLE_Disabled << TWIM_ENABLE_ENABLE_Pos;
+	// *(volatile uint32_t *)0x40004FFC = 0;
+	// *(volatile uint32_t *)0x40004FFC;
+	// *(volatile uint32_t *)0x40004FFC = 1;
+
+    // Clear exceptions and PendingIRQ from the FPU unit (Errata 87)
+#if defined(NRF52_S132)
+    __set_FPSCR(__get_FPSCR()  & ~(FPU_EXCEPTION_MASK));      
+    (void) __get_FPSCR();
+#endif	
+	NVIC_ClearPendingIRQ(FPU_IRQn);
+	NVIC_ClearPendingIRQ(SD_EVT_IRQn);
+	NVIC_ClearPendingIRQ(RADIO_NOTIFICATION_IRQn);
+
+	// Call SoftDevice Wait For event 
+	sd_app_evt_wait();
+}
+
+unsigned long noCentralWakeupCount = 0;
+
+void loop()
+{
+	if (doPoll)
+	{
+		// float pressure = bmp.readPressure() * 0.00750062;
+		// sprintf(buf, "%u", round(pressure));
+		// pressureCharacteristic.setValue(buf);
+		// pressureCharacteristic.setValue("A1");
+		// Wire.begin();
+
+		// float temp = bmp.readTemperature();
+		// sprintf(buf, "%u", round(temp));
+		// temperatureCharacteristic.setValue(buf);
+
+		// temperatureCharacteristic.setValue("A2");
+		
+		doPoll = false;
+	}
+
+	BLECentral central = blePeripheral.central();
+
+	if (central)
+	{
+		pingStarted = true;
+		lastPing = millis();
+
+		sprintf(buf, "%u", lastPing);
+		pressureCharacteristic.setValue(buf);
+
+		sprintf(buf, "%u|%u|%u", rtc1_ovf_count, rtc1_cmp_count, noCentralWakeupCount);
+		temperatureCharacteristic.setValue(buf);
+
+		// if (pingStarted && (millis() - lastPing > 500))
+		// {
+		// 	enterSleep();
+		// }
+	}
+	else
+	{
+		noCentralWakeupCount++;
+		enterSleep();
+	}
+}
+
+
