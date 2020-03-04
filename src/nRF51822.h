@@ -10,7 +10,6 @@
 #elif defined(NRF5) || defined(NRF51_S130)
   #include <ble_gatts.h>
   #include <ble_gattc.h>
-  #include <ble_gap.h>
   #include <nrf_soc.h>
 #elif defined(NRF52) && defined(S132) // ARDUINO_RBL_nRF52832
   #ifndef ARDUINO_RBL_nRF52832
@@ -75,8 +74,7 @@ class nRF51822 : public BLEDevice
 
     virtual void end();
 
-    virtual bool setTxPower(uint8_t role, uint16_t handle, int8_t txPower);
-    virtual bool setConnectedTxPower(int8_t txPower);
+    virtual bool setTxPower(int txPower);
     virtual void startAdvertising();
     virtual void disconnect();
 
@@ -106,7 +104,6 @@ class nRF51822 : public BLEDevice
     BLECharacteristic*                _broadcastCharacteristic;
 
     uint16_t                          _connectionHandle;
-    uint8_t                           _adv_handle;
 #if defined(NRF5) || defined(NRF51_S130)
     uint8_t                           _bondData[((sizeof(ble_gap_enc_key_t) + 3) / 4) * 4]  __attribute__ ((__aligned__(4)));
     ble_gap_enc_key_t*                _encKey;
@@ -125,7 +122,6 @@ class nRF51822 : public BLEDevice
     unsigned char                     _numRemoteCharacteristics;
     struct remoteCharacteristicInfo*  _remoteCharacteristicInfo;
     bool                              _remoteRequestInProgress;
-    static void faultHandler(uint32_t id, uint32_t pc, uint32_t info);
 };
 
 #endif
