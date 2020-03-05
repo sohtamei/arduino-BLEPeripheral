@@ -211,14 +211,14 @@ void nRF52::begin(unsigned char advertisementDataSize,
   memset(&_advParams, 0x00, sizeof(_advParams));
 
   //_advParams.properties.type           = this->_connectable ? BLE_GAP_ADV_TYPE_CONNECTABLE_SCANNABLE_UNDIRECTED : BLE_GAP_ADV_TYPE_NONCONNECTABLE_SCANNABLE_UNDIRECTED;
-  _advParams.properties.type = BLE_GAP_ADV_TYPE_EXTENDED_NONCONNECTABLE_SCANNABLE_UNDIRECTED;
+  _advParams.properties.type = BLE_GAP_ADV_TYPE_EXTENDED_CONNECTABLE_NONSCANNABLE_UNDIRECTED;
   _advParams.p_peer_addr    = NULL;
   _advParams.filter_policy  = BLE_GAP_ADV_FP_ANY;
   _advParams.interval       = (this->_advertisingInterval * 16) / 10; // advertising interval (in units of 0.625 ms)
   _advParams.duration       = BLE_GAP_ADV_TIMEOUT_GENERAL_UNLIMITED; // BLE_GAP_ADV_TIMEOUT_LIMITED_MAX;  // 
   _advParams.primary_phy    = BLE_GAP_PHY_CODED;
   _advParams.secondary_phy  = BLE_GAP_PHY_CODED;
-  _advParams.scan_req_notification = 0;
+  _advParams.scan_req_notification = 1;
 
   this->_advDataLen = 0;
   this->_scanRspLen = 0;
@@ -260,8 +260,8 @@ void nRF52::begin(unsigned char advertisementDataSize,
       },
       .scan_rsp_data =
       {
-          .p_data = _scanRsp,
-          .len    = BLE_GAP_ADV_SET_DATA_SIZE_MAX
+          .p_data = NULL,
+          .len    = 0
 
       }
   };
@@ -1376,6 +1376,8 @@ boolean nRF52::setConnectedTxPower(int8_t txPower) {
 
 
 void nRF52::faultHandler(uint32_t id, uint32_t pc, uint32_t info) {
+    char buf[40];
+    sprintf(buf, "%ul|%ul|%ul", id, pc, info);
     Serial.println("*** nRF52 SD faultHandler");
     PRINT_ERROR(id);
     NVIC_SystemReset();
