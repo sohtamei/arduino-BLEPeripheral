@@ -210,7 +210,7 @@ void nRF52::begin(unsigned char advertisementDataSize,
 
   memset(&_advParams, 0x00, sizeof(_advParams));
 
-  _advParams.properties.type = this->_connectable ? BLE_GAP_ADV_TYPE_CONNECTABLE_SCANNABLE_UNDIRECTED : BLE_GAP_ADV_TYPE_NONCONNECTABLE_SCANNABLE_UNDIRECTED;
+  _advParams.properties.type           = this->_connectable ? BLE_GAP_ADV_TYPE_CONNECTABLE_SCANNABLE_UNDIRECTED : BLE_GAP_ADV_TYPE_NONCONNECTABLE_SCANNABLE_UNDIRECTED;
   _advParams.p_peer_addr    = NULL;
   _advParams.filter_policy  = BLE_GAP_ADV_FP_ANY;
   _advParams.interval       = (this->_advertisingInterval * 16) / 10; // advertising interval (in units of 0.625 ms)
