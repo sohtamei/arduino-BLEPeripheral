@@ -43,7 +43,7 @@ class BLEDeviceEventListener
 class BLEDevice
 {
   friend class BLEPeripheral;
-  
+
   protected:
     BLEDevice();
 

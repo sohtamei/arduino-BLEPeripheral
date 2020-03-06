@@ -217,7 +217,7 @@ void nRF52::begin(unsigned char advertisementDataSize,
   _advParams.duration       = BLE_GAP_ADV_TIMEOUT_GENERAL_UNLIMITED; // BLE_GAP_ADV_TIMEOUT_LIMITED_MAX;  // 
   _advParams.primary_phy    = BLE_GAP_PHY_1MBPS;
   _advParams.secondary_phy  = BLE_GAP_PHY_1MBPS;
-  _advParams.scan_req_notification = 1;
+  _advParams.scan_req_notification = 0;
 
   this->_advDataLen = 0;
   this->_scanRspLen = 0;
@@ -585,6 +585,7 @@ void nRF52::longRangeMode(boolean enable)
       : BLE_GAP_ADV_TYPE_EXTENDED_NONCONNECTABLE_NONSCANNABLE_UNDIRECTED;
     _advParams.primary_phy    = BLE_GAP_PHY_CODED;
     _advParams.secondary_phy  = BLE_GAP_PHY_CODED;
+    _advParams.scan_req_notification = 1;
   }
   else
   {
@@ -595,6 +596,7 @@ void nRF52::longRangeMode(boolean enable)
       : BLE_GAP_ADV_TYPE_NONCONNECTABLE_SCANNABLE_UNDIRECTED;
     _advParams.primary_phy    = BLE_GAP_PHY_1MBPS;
     _advParams.secondary_phy  = BLE_GAP_PHY_1MBPS;
+    _advParams.scan_req_notification = 0;
   }
 
   ret = sd_ble_gap_adv_set_configure(&_advHandle, _pAdvData, &_advParams);

@@ -131,7 +131,6 @@ class BLEPeripheral : public BLEDeviceEventListener,
     virtual void BLEDeviceTemperatureReceived(BLEDevice& device, float temperature);
     virtual void BLEDeviceBatteryLevelReceived(BLEDevice& device, float batteryLevel);
 
-    BLEDevice* getDevice() { return _device; }
   private:
     void initLocalAttributes();
 
