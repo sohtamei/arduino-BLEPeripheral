@@ -1,0 +1,81 @@
+;PlatformIO Project Configuration File
+;
+;   Build options: build flags, source filter
+;   Upload options: custom upload port, speed and extra flags
+;   Library options: dependencies, extra library storages
+;   Advanced options: extra scripting
+;
+; Please visit documentation for the other options and examples
+; https://docs.platformio.org/page/projectconf.html
+ 
+[env:generic_nrf52840]
+platform = git@github.com:vladkozlov69/platform-nordicnrf52.git
+board = generic_nrf52840
+framework = arduino
+upload_protocol = stlink
+debug_tool = stlink
+
+; SoftDevice version
+build_flags = 
+  -DNRF52_S140
+  -DARDUINO_GENERIC
+
+lib_deps =
+  git@github.com:vladkozlov69/arduino-BLEPeripheral.git
+  Adafruit Unified Sensor
+  Adafruit BMP280 Library
+
+
+; [env:generic_nrf52832]
+; platform = git@github.com:vladkozlov69/platform-nordicnrf52.git
+; board = generic_nrf52832
+; framework = arduino
+; upload_protocol = stlink
+; debug_tool = stlink
+
+; ; SoftDevice version
+; build_flags = 
+;   -DNRF52_S132 
+;   -DUSE_LFRC
+
+; lib_deps =
+;   git@github.com:vladkozlov69/arduino-BLEPeripheral.git
+;   ; Adafruit Unified Sensor
+;   ; Adafruit BMP280 Library
+
+
+; [env:generic_nrf52810]
+; platform = git@github.com:vladkozlov69/platform-nordicnrf52.git
+; board = generic_nrf52810
+; framework = arduino
+; upload_protocol = stlink
+; debug_tool = stlink
+
+; ; SoftDevice version
+; build_flags = 
+;   -DNRF52_S112 
+
+; lib_deps =
+;   git@github.com:vladkozlov69/arduino-BLEPeripheral.git
+;   ; Adafruit Unified Sensor
+;   ; Adafruit BMP280 Library
+
+; [env:generic_nrf51822]
+; platform = git@github.com:vladkozlov69/platform-nordicnrf52.git
+; board = generic_nrf51822
+; framework = arduino
+; upload_protocol = stlink
+; debug_tool = stlink
+
+; ; SoftDevice version
+; build_flags = 
+;   -DNRF51_S130 
+
+; upload_flags = -c set CPUTAPID 0x0bb11477
+
+
+; lib_deps =
+;   git@github.com:vladkozlov69/arduino-BLEPeripheral.git
+;   ; Adafruit Unified Sensor
+;   ; Adafruit BMP280 Library
+
