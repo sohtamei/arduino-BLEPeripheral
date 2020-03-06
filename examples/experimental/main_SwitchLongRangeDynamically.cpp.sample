@@ -80,13 +80,15 @@ unsigned long noCentralWakeupCount = 0;
 char buf[10];
 
 boolean doSwitchLR = false;
+boolean isLR = false;
+unsigned long inLRWakeupCount = 0;
 
 void loop() {
   //digitalWrite(LED_BLUE, LOW);
   BLECentral central = blePeripheral.central();
 
   if (central) {
-    
+
     // central connected to peripheral
     // Serial.print(F("Connected to central: "));
     // Serial.println(central.address());
@@ -103,6 +105,12 @@ void loop() {
         }
 
     }
+
+    if (isLR)
+    {
+      inLRWakeupCount++;
+    }
+    
     digitalWrite(LED_RED, HIGH);
     // central disconnected
   }
@@ -113,7 +121,19 @@ void loop() {
       doSwitchLR = false;
       digitalWrite(ADV_LED, HIGH);
       ADV_LED = LED_GREEN;
+      isLR = true;
+      inLRWakeupCount = 0;
     }
+
+    if (inLRWakeupCount > 5)
+    {
+      blePeripheral.setLongRangeMode(false);
+      inLRWakeupCount = 0;
+      digitalWrite(ADV_LED, HIGH);
+      ADV_LED = LED_BLUE;
+      isLR = false;
+    }
+
     noCentralWakeupCount++;
     //digitalWrite(LED_BLUE, HIGH);
 		enterSleep();
