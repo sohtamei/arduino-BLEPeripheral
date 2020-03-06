@@ -1,0 +1,120 @@
+#include <Arduino.h>
+#include <BLEPeripheral.h>
+#include <Wire.h>
+
+BLEPeripheral blePeripheral = BLEPeripheral();
+
+BLEService pressureService = BLEService("DDD0");
+BLECharacteristic pressureCharacteristic = BLECharacteristic("DDD1", BLERead | BLEWrite, 16);
+BLEDescriptor pressureDescriptor = BLEDescriptor("2901", "Atm. Pressure");
+BLECharacteristic temperatureCharacteristic = BLECharacteristic("DDD2", BLERead | BLEWrite, 16);
+BLEDescriptor temperatureDescriptor = BLEDescriptor("2901", "Temperature");
+
+#define FPU_EXCEPTION_MASK 0x0000009F 
+
+void enterSleep()
+{
+    // Clear exceptions and PendingIRQ from the FPU unit (Errata 87)
+#ifdef NRF52_S132
+    __set_FPSCR(__get_FPSCR()  & ~(FPU_EXCEPTION_MASK));      
+    (void) __get_FPSCR();
+#endif	
+	NVIC_ClearPendingIRQ(FPU_IRQn);
+	NVIC_ClearPendingIRQ(SD_EVT_IRQn);
+	NVIC_ClearPendingIRQ(RADIO_NOTIFICATION_IRQn);
+
+	// Call SoftDevice Wait For event 
+	sd_app_evt_wait();
+}
+
+#define LED_GREEN 22
+#define LED_RED 23
+#define LED_BLUE 24
+
+int ADV_LED;
+
+bool triggerRtc1 = false;
+
+void rtc1_onCompare()
+{
+  triggerRtc1 = !triggerRtc1;
+  digitalWrite(ADV_LED, triggerRtc1 ? HIGH : LOW);
+}
+
+void setup() 
+{
+  ADV_LED = LED_BLUE;
+  pinMode(LED_GREEN, OUTPUT);
+  pinMode(LED_RED, OUTPUT);
+  pinMode(LED_BLUE, OUTPUT);
+  digitalWrite(LED_GREEN, HIGH);
+  digitalWrite(LED_RED, LOW);
+  digitalWrite(LED_BLUE, HIGH);
+  // Serial.begin(115200);
+  blePeripheral.setLocalName("HRM11");
+	blePeripheral.setAdvertisedServiceUuid(pressureService.uuid());
+  blePeripheral.addAttribute(pressureService);
+  blePeripheral.addAttribute(pressureCharacteristic);
+  blePeripheral.addAttribute(pressureDescriptor);
+	blePeripheral.addAttribute(temperatureCharacteristic);
+	blePeripheral.addAttribute(temperatureDescriptor);
+
+	blePeripheral.setAdvertisingInterval(600);
+
+	blePeripheral.begin();
+
+  //blePeripheral.setLongRangeMode(true);
+
+  // put your setup code here, to run once:
+
+  // sd_power_dcdc_mode_set(NRF_POWER_DCDC_ENABLE);
+
+  digitalWrite(LED_GREEN, LOW);
+  digitalWrite(LED_RED, HIGH);
+  delay(200);
+  digitalWrite(LED_GREEN, HIGH);
+  registerRTC1CompareCallback(rtc1_onCompare, 0xFFFFFF / 512);
+}
+
+unsigned long noCentralWakeupCount = 0;
+char buf[10];
+
+boolean doSwitchLR = false;
+
+void loop() {
+  //digitalWrite(LED_BLUE, LOW);
+  BLECentral central = blePeripheral.central();
+
+  if (central) {
+    
+    // central connected to peripheral
+    // Serial.print(F("Connected to central: "));
+    // Serial.println(central.address());
+
+    while (central.connected()) {
+      digitalWrite(LED_RED, LOW);
+      // central still connected to peripheral
+		    sprintf(buf, "%u", round(noCentralWakeupCount * 1.3 * 0.8));
+		    temperatureCharacteristic.setValue(buf);
+
+        if (pressureCharacteristic.written())
+        {
+          doSwitchLR = true;
+        }
+
+    }
+    digitalWrite(LED_RED, HIGH);
+    // central disconnected
+  }
+
+    if (doSwitchLR)
+    {
+      blePeripheral.setLongRangeMode(true);
+      doSwitchLR = false;
+      digitalWrite(ADV_LED, HIGH);
+      ADV_LED = LED_GREEN;
+    }
+    noCentralWakeupCount++;
+    //digitalWrite(LED_BLUE, HIGH);
+		enterSleep();
+}
