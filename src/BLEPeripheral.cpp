@@ -80,7 +80,11 @@ void BLEPeripheral::begin() {
 
   scanData.length = 0;
 
+#ifdef NRF51
+  unsigned char remainingAdvertisementDataLength = BLE_ADVERTISEMENT_DATA_MAX_VALUE_LENGTH; // BLE_ADVERTISEMENT_DATA_MAX_VALUE_LENGTH + 2;
+#else
   unsigned char remainingAdvertisementDataLength = BLE_GAP_ADV_SET_DATA_SIZE_MAX; // BLE_ADVERTISEMENT_DATA_MAX_VALUE_LENGTH + 2;
+#endif
   // Solicited Service UUID
   if (this->_serviceSolicitationUuid){
     BLEUuid serviceSolicitationUuid = BLEUuid(this->_serviceSolicitationUuid);
