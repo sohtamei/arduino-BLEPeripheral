@@ -92,7 +92,9 @@ class nRF52 : public BLEDevice
     virtual void requestAddress();
     virtual void requestTemperature();
     virtual void requestBatteryLevel();
+  #ifdef NRF52840  
     virtual void longRangeMode(boolean enable);
+  #endif  
 
   private:
 

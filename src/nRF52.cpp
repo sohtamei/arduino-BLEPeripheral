@@ -568,6 +568,7 @@ void nRF52::begin(unsigned char advertisementDataSize,
 
 }
 
+#ifdef NRF52840
 void nRF52::longRangeMode(boolean enable)
 {
   uint32_t ret;
@@ -605,6 +606,7 @@ void nRF52::longRangeMode(boolean enable)
   ret = sd_ble_gap_adv_start(_advHandle, APP_BLE_CONN_CFG_TAG);
   PRINT_ERROR(ret);
 }
+#endif
 
 void nRF52::poll() {
   uint32_t   evtBuf[BLE_STACK_EVT_MSG_BUF_SIZE] __attribute__ ((__aligned__(BLE_EVT_PTR_ALIGNMENT)));
