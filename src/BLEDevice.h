@@ -93,6 +93,7 @@ class BLEDevice
     virtual void requestAddress() { }
     virtual void requestTemperature() { }
     virtual void requestBatteryLevel() { }
+    virtual void longRangeMode(boolean enable) {}
 
   protected:
     unsigned short                _advertisingInterval;

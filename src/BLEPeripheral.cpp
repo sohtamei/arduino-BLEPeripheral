@@ -223,6 +223,11 @@ void BLEPeripheral::setBondStore(BLEBondStore& bondStore) {
   this->_device->setBondStore(bondStore);
 }
 
+void BLEPeripheral::setLongRangeMode(bool enable)
+{
+  this->_device->longRangeMode(enable);
+}
+
 void BLEPeripheral::setDeviceName(const char* deviceName) {
   this->_deviceNameCharacteristic.setValue(deviceName);
 }

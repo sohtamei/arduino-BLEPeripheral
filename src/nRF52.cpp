@@ -261,9 +261,10 @@ void nRF52::begin(unsigned char advertisementDataSize,
       {
           .p_data = _scanRsp,
           .len    = BLE_GAP_ADV_SET_DATA_SIZE_MAX
-
       }
   };
+
+  _pAdvData = &m_adv_data;
 
   ret = sd_ble_gap_adv_set_configure(&_advHandle, &m_adv_data, &_advParams);
   PRINT_ERROR(ret);
@@ -565,6 +566,44 @@ void nRF52::begin(unsigned char advertisementDataSize,
 
   this->startAdvertising();
 
+}
+
+void nRF52::longRangeMode(boolean enable)
+{
+  uint32_t ret;
+
+  ret = sd_ble_gap_adv_stop(_advHandle);
+  PRINT_ERROR(ret);
+
+  if (enable)
+  {
+    _pAdvData->scan_rsp_data.p_data = NULL;
+    _pAdvData->scan_rsp_data.len = 0;
+
+    _advParams.properties.type = this->_connectable 
+      ? BLE_GAP_ADV_TYPE_EXTENDED_CONNECTABLE_NONSCANNABLE_UNDIRECTED
+      : BLE_GAP_ADV_TYPE_EXTENDED_NONCONNECTABLE_NONSCANNABLE_UNDIRECTED;
+    _advParams.primary_phy    = BLE_GAP_PHY_CODED;
+    _advParams.secondary_phy  = BLE_GAP_PHY_CODED;
+    _advParams.scan_req_notification = 1;
+  }
+  else
+  {
+    _pAdvData->scan_rsp_data.p_data = _scanRsp;
+    _pAdvData->scan_rsp_data.len = BLE_GAP_ADV_SET_DATA_SIZE_MAX;
+    _advParams.properties.type = this->_connectable 
+      ? BLE_GAP_ADV_TYPE_CONNECTABLE_SCANNABLE_UNDIRECTED
+      : BLE_GAP_ADV_TYPE_NONCONNECTABLE_SCANNABLE_UNDIRECTED;
+    _advParams.primary_phy    = BLE_GAP_PHY_1MBPS;
+    _advParams.secondary_phy  = BLE_GAP_PHY_1MBPS;
+    _advParams.scan_req_notification = 0;
+  }
+
+  ret = sd_ble_gap_adv_set_configure(&_advHandle, _pAdvData, &_advParams);
+  PRINT_ERROR(ret);
+
+  ret = sd_ble_gap_adv_start(_advHandle, APP_BLE_CONN_CFG_TAG);
+  PRINT_ERROR(ret);
 }
 
 void nRF52::poll() {
@@ -1375,6 +1414,8 @@ boolean nRF52::setConnectedTxPower(int8_t txPower) {
 
 
 void nRF52::faultHandler(uint32_t id, uint32_t pc, uint32_t info) {
+    char buf[40];
+    sprintf(buf, "%ul|%ul|%ul", id, pc, info);
     Serial.println("*** nRF52 SD faultHandler");
     PRINT_ERROR(id);
     NVIC_SystemReset();

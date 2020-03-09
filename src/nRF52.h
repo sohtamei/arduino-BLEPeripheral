@@ -92,6 +92,7 @@ class nRF52 : public BLEDevice
     virtual void requestAddress();
     virtual void requestTemperature();
     virtual void requestBatteryLevel();
+    virtual void longRangeMode(boolean enable);
 
   private:
 
@@ -99,6 +100,7 @@ class nRF52 : public BLEDevice
     unsigned char                     _scanRsp[BLE_GAP_ADV_SET_DATA_SIZE_MAX];
     unsigned char                     _advHandle;
     ble_gap_adv_params_t              _advParams;
+    ble_gap_adv_data_t*               _pAdvData; 
     unsigned char                     _advDataLen;
     unsigned char                     _scanRspLen;
     BLECharacteristic*                _broadcastCharacteristic;

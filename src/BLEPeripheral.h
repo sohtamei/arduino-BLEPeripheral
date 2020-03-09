@@ -86,6 +86,7 @@ class BLEPeripheral : public BLEDeviceEventListener,
     void setConnectable(bool connectable);
     void setBondStore(BLEBondStore& bondStore);
 
+    void setLongRangeMode(bool enable);
 
     void setDeviceName(const char* deviceName);
     void setAppearance(unsigned short appearance);
