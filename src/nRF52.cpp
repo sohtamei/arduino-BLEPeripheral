@@ -14,7 +14,7 @@ uint32_t sd_ble_gatts_value_set(uint16_t handle, uint16_t offset, uint16_t* cons
 }
 
 
-// #define NRF_DEBUG
+ #define NRF_DEBUG
 
 #if defined(NRF_DEBUG)
 #define PRINT_ERROR(RET_CODE)                   \
@@ -22,7 +22,8 @@ uint32_t sd_ble_gatts_value_set(uint16_t handle, uint16_t offset, uint16_t* cons
     const uint32_t print_ret_code = (RET_CODE); \
     if (print_ret_code != NRF_SUCCESS)          \
     {                                           \
-      Serial.print("RetCode: ");                \
+      Serial.print(__LINE__);                   \
+      Serial.print(" RetCode: ");               \
       Serial.println(print_ret_code);           \
     }                                           \
   } while (0)
@@ -64,7 +65,7 @@ nRF52::nRF52() :
   _numRemoteCharacteristics(0),
   _remoteCharacteristicInfo(NULL),
   _remoteRequestInProgress(false),
-  _txPower(0)
+  _txPower(4)
 {
   this->_encKey = (ble_gap_enc_key_t*)&this->_bondData;
   memset(&this->_bondData, 0, sizeof(this->_bondData));
@@ -255,12 +256,12 @@ void nRF52::begin(unsigned char advertisementDataSize,
       .adv_data =
       {
           .p_data = _advData,
-          .len    = BLE_GAP_ADV_SET_DATA_SIZE_MAX
+          .len    = _advDataLen		// BLE_GAP_ADV_SET_DATA_SIZE_MAX
       },
       .scan_rsp_data =
       {
           .p_data = _scanRsp,
-          .len    = BLE_GAP_ADV_SET_DATA_SIZE_MAX
+          .len    = _scanRspLen		// BLE_GAP_ADV_SET_DATA_SIZE_MAX
       }
   };
 
@@ -612,9 +613,20 @@ void nRF52::poll() {
   uint32_t   evtBuf[BLE_STACK_EVT_MSG_BUF_SIZE] __attribute__ ((__aligned__(BLE_EVT_PTR_ALIGNMENT)));
   uint16_t   evtLen = sizeof(evtBuf);
   ble_evt_t* bleEvt = (ble_evt_t*)evtBuf;
+  uint32_t ret;
 
   if (sd_ble_evt_get((uint8_t*)evtBuf, &evtLen) == NRF_SUCCESS) {
+//    BLEUtil::printBuffer((uint8_t*)evtBuf, evtLen);
     switch (bleEvt->header.evt_id) {
+      case BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST:
+#ifdef NRF_DEBUG
+        Serial.print(F("Evt exchange MTU request "));
+        Serial.println(bleEvt->evt.gatts_evt.params.exchange_mtu_request.client_rx_mtu);
+#endif
+        ret = sd_ble_gatts_exchange_mtu_reply(bleEvt->evt.gatts_evt.conn_handle, BLE_GATT_ATT_MTU_DEFAULT);
+        PRINT_ERROR(ret);
+        break;
+
       case BLE_GATTC_EVT_WRITE_CMD_TX_COMPLETE:
 #ifdef NRF_DEBUG
         Serial.print(F("Evt TX complete "));
@@ -653,11 +665,13 @@ void nRF52::poll() {
           gap_conn_params.slave_latency     = 0;
           gap_conn_params.conn_sup_timeout  = 4000 / 10; // in 10ms unit
 
-          sd_ble_gap_conn_param_update(this->_connectionHandle, &gap_conn_params);
+          ret = sd_ble_gap_conn_param_update(this->_connectionHandle, &gap_conn_params);
+          PRINT_ERROR(ret);
         }
 
         if (this->_numRemoteServices > 0) {
-          sd_ble_gattc_primary_services_discover(this->_connectionHandle, 1, NULL);
+          ret = sd_ble_gattc_primary_services_discover(this->_connectionHandle, 1, NULL);
+          PRINT_ERROR(ret);
         }
         break;
 
@@ -760,10 +774,11 @@ void nRF52::poll() {
           keyset.keys_own.p_id_key    = NULL;
           keyset.keys_own.p_sign_key  = NULL;
 
-          sd_ble_gap_sec_params_reply(this->_connectionHandle, BLE_GAP_SEC_STATUS_SUCCESS, &gapSecParams, &keyset);
+          ret = sd_ble_gap_sec_params_reply(this->_connectionHandle, BLE_GAP_SEC_STATUS_SUCCESS, &gapSecParams, &keyset);
         } else {
-          sd_ble_gap_sec_params_reply(this->_connectionHandle, BLE_GAP_SEC_STATUS_PAIRING_NOT_SUPP, NULL, NULL);
+          ret = sd_ble_gap_sec_params_reply(this->_connectionHandle, BLE_GAP_SEC_STATUS_PAIRING_NOT_SUPP, NULL, NULL);
         }
+        PRINT_ERROR(ret);
         break;
 
       case BLE_GAP_EVT_SEC_INFO_REQUEST:
@@ -781,10 +796,11 @@ void nRF52::poll() {
         Serial.println();
 #endif
         if (this->_encKey->master_id.ediv == bleEvt->evt.gap_evt.params.sec_info_request.master_id.ediv) {
-          sd_ble_gap_sec_info_reply(this->_connectionHandle, &this->_encKey->enc_info, NULL, NULL);
+          ret = sd_ble_gap_sec_info_reply(this->_connectionHandle, &this->_encKey->enc_info, NULL, NULL);
         } else {
-          sd_ble_gap_sec_info_reply(this->_connectionHandle, NULL, NULL, NULL);
+          ret = sd_ble_gap_sec_info_reply(this->_connectionHandle, NULL, NULL, NULL);
         }
+        PRINT_ERROR(ret);
         break;
 
       case BLE_GAP_EVT_AUTH_STATUS:
@@ -825,8 +841,10 @@ void nRF52::poll() {
 #endif
       case BLE_GATTS_EVT_HVN_TX_COMPLETE:
 #ifdef NRF_DEBUG
-        Serial.println(F("Evt Hvn Tx Complete"));
+        Serial.print(F("Evt Hvn Tx Complete "));
+        Serial.println(bleEvt->evt.gatts_evt.params.hvn_tx_complete.count);
 #endif
+        this->_txBufferCount += bleEvt->evt.gatts_evt.params.hvn_tx_complete.count;
         break;
 
       case BLE_GATTS_EVT_WRITE: {
@@ -871,7 +889,8 @@ void nRF52::poll() {
         Serial.print(F("Evt Sys Attr Missing "));
         Serial.println(bleEvt->evt.gatts_evt.params.sys_attr_missing.hint);
 #endif
-        sd_ble_gatts_sys_attr_set(this->_connectionHandle, NULL, 0, 0);
+        ret = sd_ble_gatts_sys_attr_set(this->_connectionHandle, NULL, 0, 0);
+        PRINT_ERROR(ret);
         break;
 
       case BLE_GATTC_EVT_PRIM_SRVC_DISC_RSP:
@@ -893,14 +912,16 @@ void nRF52::poll() {
 
           uint16_t startHandle = bleEvt->evt.gattc_evt.params.prim_srvc_disc_rsp.services[count - 1].handle_range.end_handle + 1;
 
-          sd_ble_gattc_primary_services_discover(this->_connectionHandle, startHandle, NULL);
+          ret = sd_ble_gattc_primary_services_discover(this->_connectionHandle, startHandle, NULL);
+          PRINT_ERROR(ret);
         } else {
           // done discovering services
           for (int i = 0; i < this->_numRemoteServices; i++) {
             if (this->_remoteServiceInfo[i].handlesRange.start_handle != 0 && this->_remoteServiceInfo[i].handlesRange.end_handle != 0) {
               this->_remoteServiceDiscoveryIndex = i;
 
-              sd_ble_gattc_characteristics_discover(this->_connectionHandle, &this->_remoteServiceInfo[i].handlesRange);
+              ret = sd_ble_gattc_characteristics_discover(this->_connectionHandle, &this->_remoteServiceInfo[i].handlesRange);
+              PRINT_ERROR(ret);
               break;
             }
           }
@@ -930,7 +951,8 @@ void nRF52::poll() {
             serviceHandlesRange.start_handle = bleEvt->evt.gattc_evt.params.char_disc_rsp.chars[i].handle_value;
           }
 
-          sd_ble_gattc_characteristics_discover(this->_connectionHandle, &serviceHandlesRange);
+          ret = sd_ble_gattc_characteristics_discover(this->_connectionHandle, &serviceHandlesRange);
+          PRINT_ERROR(ret);
         } else {
           bool discoverCharacteristics = false;
 
@@ -938,7 +960,8 @@ void nRF52::poll() {
             if (this->_remoteServiceInfo[i].handlesRange.start_handle != 0 && this->_remoteServiceInfo[i].handlesRange.end_handle != 0) {
               this->_remoteServiceDiscoveryIndex = i;
 
-              sd_ble_gattc_characteristics_discover(this->_connectionHandle, &this->_remoteServiceInfo[i].handlesRange);
+              ret = sd_ble_gattc_characteristics_discover(this->_connectionHandle, &this->_remoteServiceInfo[i].handlesRange);
+              PRINT_ERROR(ret);
               discoverCharacteristics = true;
               break;
             }
@@ -976,7 +999,8 @@ void nRF52::poll() {
           gapSecParams.min_key_size     = 7;
           gapSecParams.max_key_size     = 16;
 
-          sd_ble_gap_authenticate(this->_connectionHandle, &gapSecParams);
+          ret = sd_ble_gap_authenticate(this->_connectionHandle, &gapSecParams);
+          PRINT_ERROR(ret);
         } else {
           uint16_t handle = bleEvt->evt.gattc_evt.params.read_rsp.handle;
 
@@ -1015,7 +1039,8 @@ void nRF52::poll() {
           gapSecParams.min_key_size     = 7;
           gapSecParams.max_key_size     = 16;
 
-          sd_ble_gap_authenticate(this->_connectionHandle, &gapSecParams);
+          ret = sd_ble_gap_authenticate(this->_connectionHandle, &gapSecParams);
+          PRINT_ERROR(ret);
         }
         break;
 
@@ -1028,7 +1053,8 @@ void nRF52::poll() {
         uint16_t handle = bleEvt->evt.gattc_evt.params.hvx.handle;
 
         if (bleEvt->evt.gattc_evt.params.hvx.type == BLE_GATT_HVX_INDICATION) {
-          sd_ble_gattc_hv_confirm(this->_connectionHandle, handle);
+          ret = sd_ble_gattc_hv_confirm(this->_connectionHandle, handle);
+          PRINT_ERROR(ret);
         }
 
         for (int i = 0; i < this->_numRemoteCharacteristics; i++) {

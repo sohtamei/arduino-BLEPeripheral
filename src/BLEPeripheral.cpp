@@ -8,7 +8,7 @@
 
 #include "BLEPeripheral.h"
 
-//#define BLE_PERIPHERAL_DEBUG
+#define BLE_PERIPHERAL_DEBUG
 
 #define DEFAULT_DEVICE_NAME "Arduino"
 #define DEFAULT_APPEARANCE  0x0000
@@ -400,7 +400,7 @@ void BLEPeripheral::BLEDeviceRemoteCharacteristicValueChanged(BLEDevice& /*devic
   remoteCharacteristic.setValue(this->_central, value, valueLength);
 }
 
-void BLEPeripheral::BLEDeviceAddressReceived(BLEDevice& /*device*/, const unsigned char* /*address*/) {
+void BLEPeripheral::BLEDeviceAddressReceived(BLEDevice& /*device*/, const unsigned char* address) {
 #ifdef BLE_PERIPHERAL_DEBUG
   char addressStr[18];
 

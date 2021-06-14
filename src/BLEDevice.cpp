@@ -16,8 +16,8 @@
 
 BLEDevice::BLEDevice() :
   _advertisingInterval(DEFAULT_ADVERTISING_INTERVAL),
-  _minimumConnectionInterval(MIN_CONN_INTERVAL),
-  _maximumConnectionInterval(MAX_CONN_INTERVAL),
+  _minimumConnectionInterval(0),//MIN_CONN_INTERVAL),
+  _maximumConnectionInterval(0),//MAX_CONN_INTERVAL),
   _connectable(DEFAULT_CONNECTABLE),
   _bondStore(NULL),
   _eventListener(NULL)
