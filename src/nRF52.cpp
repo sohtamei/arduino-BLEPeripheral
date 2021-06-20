@@ -14,7 +14,7 @@ uint32_t sd_ble_gatts_value_set(uint16_t handle, uint16_t offset, uint16_t* cons
 }
 
 
- #define NRF_DEBUG
+// #define NRF_DEBUG
 
 #if defined(NRF_DEBUG)
 #define PRINT_ERROR(RET_CODE)                   \
@@ -616,7 +616,6 @@ void nRF52::poll() {
   uint32_t ret;
 
   if (sd_ble_evt_get((uint8_t*)evtBuf, &evtLen) == NRF_SUCCESS) {
-//    BLEUtil::printBuffer((uint8_t*)evtBuf, evtLen);
     switch (bleEvt->header.evt_id) {
       case BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST:
 #ifdef NRF_DEBUG
